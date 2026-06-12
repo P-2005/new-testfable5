@@ -80,7 +80,7 @@ export const HUD = ({ onExit }) => {
                 <p className="uppercase tracking-widest text-[10px]">Walk</p>
               </div>
               <div className="text-center">
-                <p className="mb-1 font-semibold text-white">Mouse</p>
+                <p className="mb-1 font-semibold text-white">Mouse / Drag</p>
                 <p className="uppercase tracking-widest text-[10px]">Look</p>
               </div>
               <div className="text-center">
@@ -108,7 +108,7 @@ export const HUD = ({ onExit }) => {
       </AnimatePresence>
 
       {/* Top bar */}
-      <div className="pointer-events-none absolute top-0 left-0 right-0 z-30 flex items-start justify-between p-5 sm:p-8">
+      <div className="pointer-events-none absolute top-0 left-0 right-0 z-[45] flex items-start justify-between p-5 sm:p-8">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center border border-[#d4af37]/70 bg-black/30 font-display text-sm text-[#d4af37] backdrop-blur-sm">
             PM
@@ -142,8 +142,8 @@ export const HUD = ({ onExit }) => {
       {/* Controls hint, bottom left (while exploring on desktop) */}
       {locked && !isMobile && (
         <div className="pointer-events-none absolute bottom-6 left-6 z-30 border border-white/10 bg-black/35 px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-white/55 backdrop-blur-sm">
-          <p>WASD — Move · Shift — Run · Space — Jump</p>
-          <p className="mt-1">ESC — Release cursor</p>
+          <p>WASD — Move · Mouse/Drag — Look · Shift — Run</p>
+          <p className="mt-1">Space — Jump · ESC — Menu</p>
         </div>
       )}
 
