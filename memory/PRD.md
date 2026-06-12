@@ -49,7 +49,13 @@ Build an extraordinary, immersive 3D digital art gallery portfolio website — a
 - NPC dialogue system: data/npcs.js (10 distinct personas: curator, collector, student, professor, critic, blogger, founder, retired engineer, photographer, badminton player) each with greeting + 3 unique Q&A options; NpcDialog overlay (gold/dark, option highlighting, ESC/leave)
 - Reticle prioritises artwork > NPC > sofa with contextual labels
 - Debug: window.__galleryStore exposed; craco regex includes NPCs
-- LIMITATION: "ultrarealistic" humans constrained by freely-available animated models; using three.js Soldier (realistic PBR human, smooth Mixamo animations) tinted per NPC
+- LIMITATION: "ultrarealistic" humans constrained by freely-available animated models
+
+## Iteration 5 (June 2026)
+- NPCs replaced with realistic casual HUMAN avatars (Ready-Player-Me style): visitor_f1.glb (woman, casual), visitor_f2.glb (woman with glasses), visitor_m1.glb (man) hosted in /public/models with RPM animation-library walk/idle clips (F_Walk/F_Idle/M_Walk/M_Idle)
+- m1 rig uses "mixamorig2:" bone prefix → clips retargeted via track renaming (retargetClip in NPCs.jsx); only quaternion (+Hips position for f rigs) tracks kept
+- npcs.js: each NPC has model field (f1/f2/m1); tint materials: Wolf3D_Outfit_Top / costume / MAT-Body
+- Behavior/dialogue/interaction unchanged; Soldier.glb removed
 
 ## Backend API
 - GET /api/ — health

@@ -4,6 +4,7 @@
 export const NPCS = [
   {
     id: "aurelia",
+    model: "f1",
     name: "Aurelia",
     role: "Head Curator",
     tint: "#ffffff",
@@ -31,6 +32,7 @@ export const NPCS = [
   },
   {
     id: "whitfield",
+    model: "m1",
     name: "Mr. Whitfield",
     role: "Art Collector",
     tint: "#d8cfc0",
@@ -58,6 +60,7 @@ export const NPCS = [
   },
   {
     id: "zara",
+    model: "f1",
     name: "Zara",
     role: "Design Student",
     tint: "#e8d4d4",
@@ -85,6 +88,7 @@ export const NPCS = [
   },
   {
     id: "iyer",
+    model: "m1",
     name: "Prof. Iyer",
     role: "CS Professor",
     tint: "#cfd4dc",
@@ -112,6 +116,7 @@ export const NPCS = [
   },
   {
     id: "leon",
+    model: "m1",
     name: "Leon",
     role: "Art Critic",
     tint: "#d4d4d4",
@@ -139,6 +144,7 @@ export const NPCS = [
   },
   {
     id: "maya",
+    model: "f1",
     name: "Maya",
     role: "Travel Blogger",
     tint: "#e0d8c8",
@@ -166,6 +172,7 @@ export const NPCS = [
   },
   {
     id: "dev",
+    model: "m1",
     name: "Dev",
     role: "Startup Founder",
     tint: "#c8d8d0",
@@ -193,6 +200,7 @@ export const NPCS = [
   },
   {
     id: "joe",
+    model: "m1",
     name: "Grandpa Joe",
     role: "Retired Engineer",
     tint: "#d8d0c4",
@@ -220,6 +228,7 @@ export const NPCS = [
   },
   {
     id: "nina",
+    model: "f2",
     name: "Nina",
     role: "Photographer",
     tint: "#d0d0dc",
@@ -247,6 +256,7 @@ export const NPCS = [
   },
   {
     id: "kabir",
+    model: "m1",
     name: "Kabir",
     role: "Badminton Player",
     tint: "#ccd8c8",

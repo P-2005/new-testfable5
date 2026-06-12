@@ -9,6 +9,14 @@ import { useGalleryStore } from "../../store/galleryStore";
 const BOUNDS = { x: 11, z: 7 };
 const AVOID = { x: 3.0, z: 2.6 }; // sofa zone
 
+// Human visitor models (Ready-Player-Me style casual avatars)
+// f1: woman in casual top/jeans · f2: woman with glasses · m1: man in shirt
+const MODEL_CONFIG = {
+  f1: { url: "/models/visitor_f1.glb", prefix: "", tintMat: "Wolf3D_Outfit_Top", keepHipsPos: true },
+  f2: { url: "/models/visitor_f2.glb", prefix: "", tintMat: "costume", keepHipsPos: true },
+  m1: { url: "/models/visitor_m1.glb", prefix: "mixamorig2:", tintMat: "MAT-Body", keepHipsPos: false },
+};
+
 const shortestAngle = (from, to) => {
   let d = (to - from) % (Math.PI * 2);
   if (d > Math.PI) d -= Math.PI * 2;
@@ -26,13 +34,31 @@ const randomPoint = () => {
   return new THREE.Vector3(8, 0, 5);
 };
 
+// Retarget an RPM animation clip onto a (possibly bone-prefixed) rig.
+// Keeps rotation tracks (+ optional Hips position) so different body
+// proportions don't distort.
+const retargetClip = (clip, prefix, keepHipsPos) => {
+  const c = clip.clone();
+  c.tracks = c.tracks.filter((t) => {
+    if (t.name.endsWith(".quaternion")) return true;
+    if (keepHipsPos && t.name.endsWith(".position") && t.name.startsWith("Hips.")) return true;
+    return false;
+  });
+  if (prefix) {
+    c.tracks.forEach((t) => {
+      t.name = prefix + t.name;
+    });
+  }
+  return c;
+};
+
 const Npc = ({ npc, object, clips }) => {
   const group = useRef();
   const mixer = useMemo(() => new THREE.AnimationMixer(object), [object]);
   const actions = useMemo(
     () => ({
-      idle: mixer.clipAction(THREE.AnimationClip.findByName(clips, "Idle")),
-      walk: mixer.clipAction(THREE.AnimationClip.findByName(clips, "Walk")),
+      idle: mixer.clipAction(clips.idle),
+      walk: mixer.clipAction(clips.walk),
     }),
     [mixer, clips]
   );
@@ -121,24 +147,47 @@ const Npc = ({ npc, object, clips }) => {
       scale={npc.scale}
       onClick={handleClick}
     >
-      <primitive object={object} rotation={[0, Math.PI, 0]} />
+      <primitive object={object} />
     </group>
   );
 };
 
 export const NPCs = () => {
-  const { scene, animations } = useGLTF("/models/Soldier.glb");
+  const f1 = useGLTF(MODEL_CONFIG.f1.url);
+  const f2 = useGLTF(MODEL_CONFIG.f2.url);
+  const m1 = useGLTF(MODEL_CONFIG.m1.url);
+  const fWalk = useGLTF("/models/F_Walk.glb");
+  const fIdle = useGLTF("/models/F_Idle.glb");
+  const mWalk = useGLTF("/models/M_Walk.glb");
+  const mIdle = useGLTF("/models/M_Idle.glb");
+
+  const scenes = useMemo(() => ({ f1: f1.scene, f2: f2.scene, m1: m1.scene }), [f1, f2, m1]);
+
+  const clipSets = useMemo(() => {
+    const sets = {};
+    for (const key of Object.keys(MODEL_CONFIG)) {
+      const cfg = MODEL_CONFIG[key];
+      const walkSrc = key === "m1" ? mWalk.animations[0] : fWalk.animations[0];
+      const idleSrc = key === "m1" ? mIdle.animations[0] : fIdle.animations[0];
+      sets[key] = {
+        walk: retargetClip(walkSrc, cfg.prefix, cfg.keepHipsPos),
+        idle: retargetClip(idleSrc, cfg.prefix, cfg.keepHipsPos),
+      };
+    }
+    return sets;
+  }, [fWalk, fIdle, mWalk, mIdle]);
 
   const clones = useMemo(
     () =>
       NPCS.map((npc) => {
-        const obj = SkeletonUtils.clone(scene);
+        const cfg = MODEL_CONFIG[npc.model] || MODEL_CONFIG.m1;
+        const obj = SkeletonUtils.clone(scenes[npc.model] || scenes.m1);
         obj.traverse((c) => {
           if (c.isMesh || c.isSkinnedMesh) {
             c.userData.npcId = npc.id;
             c.frustumCulled = false;
             c.castShadow = false;
-            if (c.material) {
+            if (c.material && c.material.name === cfg.tintMat) {
               c.material = c.material.clone();
               c.material.color = new THREE.Color(npc.tint);
             }
@@ -146,12 +195,23 @@ export const NPCs = () => {
         });
         return obj;
       }),
-    [scene]
+    [scenes]
   );
 
   return NPCS.map((npc, i) => (
-    <Npc key={npc.id} npc={npc} object={clones[i]} clips={animations} />
+    <Npc
+      key={npc.id}
+      npc={npc}
+      object={clones[i]}
+      clips={clipSets[npc.model] || clipSets.m1}
+    />
   ));
 };
 
-useGLTF.preload("/models/Soldier.glb");
+useGLTF.preload(MODEL_CONFIG.f1.url);
+useGLTF.preload(MODEL_CONFIG.f2.url);
+useGLTF.preload(MODEL_CONFIG.m1.url);
+useGLTF.preload("/models/F_Walk.glb");
+useGLTF.preload("/models/F_Idle.glb");
+useGLTF.preload("/models/M_Walk.glb");
+useGLTF.preload("/models/M_Idle.glb");
