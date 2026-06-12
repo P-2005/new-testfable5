@@ -42,6 +42,15 @@ Build an extraordinary, immersive 3D digital art gallery portfolio website — a
 - Input: continuous per-frame polling via refs (keyboard + mouse fully parallel, no event blocking)
 - NOTE: craco.config.js R3F babel exclusion regex now includes Sofa — any NEW R3F file must be added there
 
+## Iteration 4 (June 2026)
+- True game-style cursor lock: tryLock engages simulated lock instantly (CSS cursor:none + movementX/Y delta mouselook) and upgrades to native pointer lock where permitted — cursor disappears and camera follows raw mouse deltas even inside sandboxed iframes; L toggles, ESC/P pause
+- Double sofa: two leather sofas back-to-back at hall centre (one faces featured wall, one faces entrance); each has own seat/stand targets; collision rect ±2.05x / ±1.6z
+- 10 NPCs (Soldier.glb hosted at /models/Soldier.glb, SkeletonUtils clones, per-NPC material tint + scale): wander AI (random waypoints avoiding sofa, idle/walk crossfade animations), stop & face player when talking
+- NPC dialogue system: data/npcs.js (10 distinct personas: curator, collector, student, professor, critic, blogger, founder, retired engineer, photographer, badminton player) each with greeting + 3 unique Q&A options; NpcDialog overlay (gold/dark, option highlighting, ESC/leave)
+- Reticle prioritises artwork > NPC > sofa with contextual labels
+- Debug: window.__galleryStore exposed; craco regex includes NPCs
+- LIMITATION: "ultrarealistic" humans constrained by freely-available animated models; using three.js Soldier (realistic PBR human, smooth Mixamo animations) tinted per NPC
+
 ## Backend API
 - GET /api/ — health
 - POST /api/artworks/{artwork_id}/view → {artwork_id, views}

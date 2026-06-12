@@ -4,44 +4,44 @@ const GOLD = "#b08d2f";
 const LEATHER = "#2b2724";
 const CUSHION = "#37322d";
 
-const Part = ({ position, size, color, metalness = 0.05, roughness = 0.8, onClick }) => (
-  <mesh position={position} userData={{ sofa: true }} onClick={onClick}>
-    <boxGeometry args={size} />
-    <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} />
-  </mesh>
-);
-
 /**
- * Luxury leather sofa in the centre of the hall, facing the featured wall.
- * Click / tap to sit; while seated the visitor can look around 360°.
+ * Luxury leather sofa. Two are placed back-to-back in the hall centre.
+ * Click / tap (or centre-reticle click) to sit; 360° look while seated.
  */
-export const Sofa = () => {
+export const Sofa = ({ position = [0, 0, 0], rotationY = 0, seat, stand }) => {
   const handleClick = (e) => {
     e.stopPropagation();
     const s = useGalleryStore.getState();
-    if (s.paused || s.activeArtwork || s.seated) return;
+    if (s.paused || s.activeArtwork || s.activeNpc || s.seated) return;
     // Locked mode sits via the centre-reticle click in Player
-    if (!s.isMobile && s.plActive) return;
+    if (!s.isMobile && (s.plActive || s.simLock)) return;
     if (typeof e.delta === "number" && e.delta > 8) return;
-    s.setSeated(true);
+    s.sitDown(seat, stand);
   };
 
+  const Part = ({ position: p, size, color, metalness = 0.05, roughness = 0.8 }) => (
+    <mesh position={p} userData={{ sofa: true }} onClick={handleClick}>
+      <boxGeometry args={size} />
+      <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} />
+    </mesh>
+  );
+
   return (
-    <group position={[0, 0, 0]}>
+    <group position={position} rotation={[0, rotationY, 0]}>
       {/* Base frame */}
-      <Part position={[0, 0.3, 0]} size={[3.3, 0.16, 1.2]} color={LEATHER} onClick={handleClick} />
+      <Part position={[0, 0.3, 0]} size={[3.3, 0.16, 1.2]} color={LEATHER} />
       {/* Gold trim under base */}
-      <Part position={[0, 0.21, 0]} size={[3.34, 0.03, 1.24]} color={GOLD} metalness={0.85} roughness={0.3} onClick={handleClick} />
+      <Part position={[0, 0.21, 0]} size={[3.34, 0.03, 1.24]} color={GOLD} metalness={0.85} roughness={0.3} />
       {/* Seat cushions */}
-      <Part position={[-0.8, 0.46, 0]} size={[1.52, 0.18, 1.1]} color={CUSHION} onClick={handleClick} />
-      <Part position={[0.8, 0.46, 0]} size={[1.52, 0.18, 1.1]} color={CUSHION} onClick={handleClick} />
-      {/* Backrest (sofa faces the featured wall at -z) */}
-      <Part position={[0, 0.78, 0.5]} size={[3.3, 0.75, 0.2]} color={LEATHER} onClick={handleClick} />
-      <Part position={[-0.8, 0.8, 0.44]} size={[1.5, 0.6, 0.14]} color={CUSHION} onClick={handleClick} />
-      <Part position={[0.8, 0.8, 0.44]} size={[1.5, 0.6, 0.14]} color={CUSHION} onClick={handleClick} />
+      <Part position={[-0.8, 0.46, 0]} size={[1.52, 0.18, 1.1]} color={CUSHION} />
+      <Part position={[0.8, 0.46, 0]} size={[1.52, 0.18, 1.1]} color={CUSHION} />
+      {/* Backrest */}
+      <Part position={[0, 0.78, 0.5]} size={[3.3, 0.75, 0.2]} color={LEATHER} />
+      <Part position={[-0.8, 0.8, 0.44]} size={[1.5, 0.6, 0.14]} color={CUSHION} />
+      <Part position={[0.8, 0.8, 0.44]} size={[1.5, 0.6, 0.14]} color={CUSHION} />
       {/* Armrests */}
-      <Part position={[-1.74, 0.56, 0]} size={[0.2, 0.42, 1.2]} color={LEATHER} onClick={handleClick} />
-      <Part position={[1.74, 0.56, 0]} size={[0.2, 0.42, 1.2]} color={LEATHER} onClick={handleClick} />
+      <Part position={[-1.74, 0.56, 0]} size={[0.2, 0.42, 1.2]} color={LEATHER} />
+      <Part position={[1.74, 0.56, 0]} size={[0.2, 0.42, 1.2]} color={LEATHER} />
       {/* Gold legs */}
       {[
         [-1.5, -0.45],

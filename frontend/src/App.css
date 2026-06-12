@@ -110,6 +110,12 @@
     }
 }
 
+/* Hide OS cursor while pointer/simulated lock is engaged */
+body.cursor-locked,
+body.cursor-locked * {
+    cursor: none !important;
+}
+
 /* Slim gold scrollbar for overlay panels */
 ::-webkit-scrollbar {
     width: 6px;

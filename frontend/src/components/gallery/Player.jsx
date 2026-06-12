@@ -8,6 +8,7 @@ const WALK = 4.2;
 const RUN = 7.2;
 const EYE = 1.6;
 const BOUNDS = { x: 12.7, z: 8.7 };
+const SOFA_RECT = { x: 2.05, z: 1.6 }; // double-sofa footprint + player radius
 const LOOK_SENS = 0.0023;
 const DRAG_SENS = 0.0032;
 
@@ -15,12 +16,13 @@ const clamp = THREE.MathUtils.clamp;
 
 /**
  * Game-style first-person controller.
- * - Exploration starts immediately (WASD + drag-look always work).
- * - Clicking empty space engages native pointer lock (cursor disappears,
- *   raw mouselook). In sandboxed iframes where lock is blocked, drag-look
- *   remains the seamless fallback.
- * - L toggles pointer lock. P / ESC opens the pause menu.
- * - Look + movement are exponentially smoothed for fluidity.
+ * Lock modes:
+ *  - Native pointer lock (cursor captured by the browser) when permitted.
+ *  - Simulated lock: cursor hidden via CSS, camera driven by raw mouse
+ *    movement deltas (movementX/Y) — works inside sandboxed iframes where
+ *    requestPointerLock is blocked.
+ * Continuous per-frame input polling: keyboard state lives in refs and the
+ * camera look target in refs, so WASD and mouselook run fully in parallel.
  */
 export const Player = () => {
   const { camera, scene, gl } = useThree();
@@ -45,7 +47,7 @@ export const Player = () => {
   // Smoothed movement velocity
   const vel = useRef(new THREE.Vector3());
 
-  // Pointer-lock state
+  // Lock state
   const plActive = useRef(false);
   const suppressPause = useRef(false);
   const dragging = useRef(false);
@@ -53,20 +55,21 @@ export const Player = () => {
   const lastPos = useRef({ x: 0, y: 0 });
 
   const tryLock = () => {
+    // Engage simulated lock instantly; upgrade to native lock if permitted.
+    useGalleryStore.getState().setSimLock(true);
     const el = gl.domElement;
     try {
       const p = el.requestPointerLock();
       if (p && typeof p.catch === "function") {
-        p.catch(() => {
-          /* sandboxed iframe — drag-look fallback stays active */
-        });
+        p.catch(() => {});
       }
     } catch (_e) {
-      /* SecurityError in sandboxed iframe — fallback mode */
+      /* sandboxed iframe — simulated lock stays active */
     }
   };
 
   const releaseLock = () => {
+    useGalleryStore.getState().setSimLock(false);
     if (document.pointerLockElement) {
       suppressPause.current = true;
       document.exitPointerLock();
@@ -97,14 +100,15 @@ export const Player = () => {
       plActive.current = active;
       useGalleryStore.getState().setPlActive(active);
       // Browser-initiated exit (native ESC) → open pause menu,
-      // unless the exit was caused by a modal or an intentional toggle.
+      // unless the exit was caused by a dialog/modal or intentional toggle.
       if (!active && wasActive) {
         if (suppressPause.current) {
           suppressPause.current = false;
           return;
         }
         const s = useGalleryStore.getState();
-        if (!s.activeArtwork && !s.paused) s.setPaused(true);
+        s.setSimLock(false);
+        if (!s.activeArtwork && !s.activeNpc && !s.paused) s.setPaused(true);
       }
     };
     const onError = () => {
@@ -123,22 +127,22 @@ export const Player = () => {
   useEffect(() => {
     const togglePause = () => {
       const s = useGalleryStore.getState();
-      if (s.activeArtwork) return;
-      if (!s.paused && plActive.current) releaseLock();
+      if (s.activeArtwork || s.activeNpc) return;
+      if (!s.paused) releaseLock();
       s.setPaused(!s.paused);
     };
     const down = (e) => {
       keys.current[e.code] = true;
       if (e.code === "Space") e.preventDefault();
       if (e.code === "KeyP") togglePause();
-      // Native ESC already exits pointer lock (handled by pointerlockchange);
-      // this covers ESC while in drag-look mode.
+      // Native ESC exits pointer lock (handled by pointerlockchange);
+      // this covers ESC in simulated-lock / drag mode.
       if (e.code === "Escape" && !plActive.current) togglePause();
-      // L toggles pointer lock (game-style mouselook)
+      // L toggles cursor lock (game-style mouselook)
       if (e.code === "KeyL") {
         const s = useGalleryStore.getState();
-        if (s.paused || s.activeArtwork) return;
-        if (plActive.current) releaseLock();
+        if (s.paused || s.activeArtwork || s.activeNpc) return;
+        if (plActive.current || s.simLock) releaseLock();
         else tryLock();
       }
     };
@@ -154,17 +158,18 @@ export const Player = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Mouse look: pointer-lock movement + drag fallback + click handling
+  // Mouse look: locked delta input + drag fallback + click routing
   useEffect(() => {
     if (isMobile) return;
     const el = gl.domElement;
 
     const onMouseMove = (e) => {
       const s = useGalleryStore.getState();
-      if (s.paused || s.activeArtwork) return;
-      if (plActive.current) {
-        // Chromium can fire a huge movement spike right after lock engages — ignore it
-        if (Math.abs(e.movementX) > 200 || Math.abs(e.movementY) > 200) return;
+      if (s.paused || s.activeArtwork || s.activeNpc) return;
+      const lockedAny = plActive.current || s.simLock;
+      if (lockedAny) {
+        // Delta input: read directional movement, not cursor position
+        if (Math.abs(e.movementX) > 250 || Math.abs(e.movementY) > 250) return;
         targetYaw.current -= e.movementX * LOOK_SENS;
         targetPitch.current = clamp(
           targetPitch.current - e.movementY * LOOK_SENS,
@@ -187,7 +192,8 @@ export const Player = () => {
 
     const onMouseDown = (e) => {
       const s = useGalleryStore.getState();
-      if (s.paused || s.activeArtwork || plActive.current) return;
+      if (s.paused || s.activeArtwork || s.activeNpc) return;
+      if (plActive.current || s.simLock) return;
       if (e.target !== el) return;
       dragging.current = true;
       dragDist.current = 0;
@@ -200,11 +206,16 @@ export const Player = () => {
 
     const onClick = (e) => {
       const s = useGalleryStore.getState();
-      if (s.paused || s.activeArtwork) return;
-      if (plActive.current) {
+      if (s.paused || s.activeArtwork || s.activeNpc) return;
+      const lockedAny = plActive.current || s.simLock;
+      if (lockedAny) {
         // Locked mode: click acts on whatever the centre circle targets
         if (s.hoveredSofa && !s.seated) {
-          s.setSeated(true);
+          s.sitDown(s.hoveredSofa.seat, s.hoveredSofa.stand);
+          return;
+        }
+        if (s.hoveredNpc) {
+          s.openNpc(s.hoveredNpc);
           return;
         }
         if (s.hoveredId) {
@@ -213,8 +224,8 @@ export const Player = () => {
         }
         return;
       }
-      // Unlocked mode: a clean click (not a drag) on empty space engages mouselook.
-      // Clicks on artworks are handled by the Exhibit's own onClick.
+      // Unlocked mode: a clean click (not a drag) on empty space locks the cursor.
+      // Clicks on artworks / sofa / NPCs are handled by their own onClick.
       if (dragDist.current > 8) return;
       if (e.target !== el) return;
       const rect = el.getBoundingClientRect();
@@ -228,7 +239,9 @@ export const Player = () => {
       if (
         first &&
         first.distance < 9 &&
-        (first.object.userData?.artworkId || first.object.userData?.sofa)
+        (first.object.userData?.artworkId ||
+          first.object.userData?.sofa ||
+          first.object.userData?.npcId)
       )
         return;
       tryLock();
@@ -278,7 +291,7 @@ export const Player = () => {
   useFrame((_, dt) => {
     const s = useGalleryStore.getState();
     const delta = Math.min(dt, 0.05);
-    const exploring = !s.paused && !s.activeArtwork;
+    const exploring = !s.paused && !s.activeArtwork && !s.activeNpc;
 
     // Mobile look feeds the same smoothed yaw/pitch system
     if (isMobile && exploring) {
@@ -299,7 +312,7 @@ export const Player = () => {
     euler.current.set(pitch.current, yaw.current, 0);
     camera.quaternion.setFromEuler(euler.current);
 
-    // Movement input
+    // Movement input (continuous polling from key state refs)
     let f = 0;
     let r = 0;
     if (exploring) {
@@ -321,13 +334,14 @@ export const Player = () => {
       if (wantsMove) {
         s.setSeated(false);
         seatedActive = false;
-        camera.position.set(0, EYE, -1.6);
+        camera.position.set(s.standTarget.x, EYE, s.standTarget.z);
         vel.current.set(0, 0, 0);
       } else {
+        const t = s.seatTarget;
         const sitEase = 1 - Math.exp(-8 * delta);
-        camera.position.x += (0 - camera.position.x) * sitEase;
-        camera.position.y += (1.18 - camera.position.y) * sitEase;
-        camera.position.z += (0.12 - camera.position.z) * sitEase;
+        camera.position.x += (t.x - camera.position.x) * sitEase;
+        camera.position.y += (t.y - camera.position.y) * sitEase;
+        camera.position.z += (t.z - camera.position.z) * sitEase;
         vel.current.set(0, 0, 0);
       }
     }
@@ -388,16 +402,14 @@ export const Player = () => {
     const bobOff = moving && grounded.current ? Math.sin(bob.current) * 0.032 : 0;
     camera.position.y = EYE + jumpH.current + bobOff;
 
-    // Solid sofa: push the player out of its footprint while walking
-    const SOFA_X = 2.05;
-    const SOFA_Z = 1.05;
+    // Solid double-sofa: push the player out of its footprint while walking
     const px = camera.position.x;
     const pz = camera.position.z;
-    if (Math.abs(px) < SOFA_X && Math.abs(pz) < SOFA_Z) {
-      const depthX = SOFA_X - Math.abs(px);
-      const depthZ = SOFA_Z - Math.abs(pz);
-      if (depthX < depthZ) camera.position.x = Math.sign(px || 1) * SOFA_X;
-      else camera.position.z = Math.sign(pz || 1) * SOFA_Z;
+    if (Math.abs(px) < SOFA_RECT.x && Math.abs(pz) < SOFA_RECT.z) {
+      const depthX = SOFA_RECT.x - Math.abs(px);
+      const depthZ = SOFA_RECT.z - Math.abs(pz);
+      if (depthX < depthZ) camera.position.x = Math.sign(px || 1) * SOFA_RECT.x;
+      else camera.position.z = Math.sign(pz || 1) * SOFA_RECT.z;
     }
     }
 
@@ -406,25 +418,41 @@ export const Player = () => {
         pos: [camera.position.x, camera.position.y, camera.position.z],
         paused: s.paused,
         plActive: plActive.current,
+        simLock: s.simLock,
+        seated: s.seated,
         hovered: s.hoveredId,
+        hoveredNpc: s.hoveredNpc,
       };
     }
 
-    // Center raycast for hover detection (throttled)
+    // Centre raycast for hover detection (throttled)
     rayTimer.current += delta;
     if (rayTimer.current > 0.12 && exploring) {
       rayTimer.current = 0;
       raycaster.current.setFromCamera(center.current, camera);
       const hits = raycaster.current.intersectObjects(scene.children, true);
       const first = hits.find((hit) => hit.object.isMesh && hit.object.visible);
-      const id =
-        first && first.object.userData?.artworkId && first.distance < 8
-          ? first.object.userData.artworkId
-          : null;
-      const sofaHover =
-        !s.seated && !!(first && first.object.userData?.sofa && first.distance < 5);
+
+      let id = null;
+      let npcId = null;
+      let sofaHover = null;
+      if (first) {
+        if (first.object.userData?.artworkId && first.distance < 8) {
+          id = first.object.userData.artworkId;
+        } else if (first.object.userData?.npcId && first.distance < 6) {
+          npcId = first.object.userData.npcId;
+        } else if (first.object.userData?.sofa && first.distance < 5 && !s.seated) {
+          // Which sofa of the back-to-back pair? Decide by hit point z.
+          sofaHover =
+            first.point.z >= 0
+              ? { seat: { x: 0, y: 1.18, z: 0.5 }, stand: { x: 0, z: 2.4 } }
+              : { seat: { x: 0, y: 1.18, z: -0.5 }, stand: { x: 0, z: -2.4 } };
+        }
+      }
       if (id !== s.hoveredId) s.setHovered(id);
-      if (sofaHover !== s.hoveredSofa) s.setHoveredSofa(sofaHover);
+      if (npcId !== s.hoveredNpc) s.setHoveredNpc(npcId);
+      if (JSON.stringify(sofaHover) !== JSON.stringify(s.hoveredSofa))
+        s.setHoveredSofa(sofaHover);
     }
   });
 

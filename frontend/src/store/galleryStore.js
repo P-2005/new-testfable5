@@ -19,10 +19,15 @@ export const useGalleryStore = create((set, get) => ({
   isMobile: typeof window !== "undefined" && "ontouchstart" in window,
   paused: false,
   plActive: false, // native pointer lock engaged
+  simLock: false, // simulated lock (cursor hidden, delta mouselook) for sandboxed frames
   seated: false,
-  hoveredSofa: false,
+  seatTarget: { x: 0, y: 1.18, z: -0.5 },
+  standTarget: { x: 0, z: -2.4 },
+  hoveredSofa: null, // null | { seat, stand }
   hoveredId: null,
+  hoveredNpc: null,
   activeArtwork: null,
+  activeNpc: null,
   viewCount: null,
   favorites: [],
   favOpen: false,
@@ -31,19 +36,34 @@ export const useGalleryStore = create((set, get) => ({
   setControls: (controls) => set({ controls }),
   setPaused: (paused) => set({ paused }),
   setPlActive: (plActive) => set({ plActive }),
+  setSimLock: (simLock) => set({ simLock }),
   setHovered: (hoveredId) => set({ hoveredId }),
-  setFavOpen: (favOpen) => set({ favOpen }),
-  setSeated: (seated) => set({ seated, hoveredSofa: false }),
+  setHoveredNpc: (hoveredNpc) => set({ hoveredNpc }),
   setHoveredSofa: (hoveredSofa) => set({ hoveredSofa }),
+  setFavOpen: (favOpen) => set({ favOpen }),
+
+  sitDown: (seat, stand) =>
+    set({ seated: true, seatTarget: seat, standTarget: stand, hoveredSofa: null }),
+  setSeated: (seated) => set({ seated, hoveredSofa: null }),
+
+  openNpc: (npcId) => {
+    set({ activeNpc: npcId, hoveredNpc: null, hoveredId: null, favOpen: false });
+    const { controls, isMobile } = get();
+    if (!isMobile && controls) controls.unlock();
+  },
+  closeNpc: () => set({ activeNpc: null }),
 
   resetSession: () =>
     set({
       paused: false,
       activeArtwork: null,
+      activeNpc: null,
       hoveredId: null,
+      hoveredNpc: null,
       favOpen: false,
       seated: false,
-      hoveredSofa: false,
+      hoveredSofa: null,
+      simLock: false,
     }),
 
   openArtwork: async (artwork) => {
@@ -95,3 +115,8 @@ export const useGalleryStore = create((set, get) => ({
     }
   },
 }));
+
+// Dev/test helper
+if (typeof window !== "undefined") {
+  window.__galleryStore = useGalleryStore;
+}

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, X, DoorOpen, Eye, Pause, Play, Lock } from "lucide-react";
 import { useGalleryStore } from "../../store/galleryStore";
 import { ARTWORKS } from "../../data/artworks";
+import { NPCS } from "../../data/npcs";
 
 const Reticle = ({ active, label, sublabel }) => (
   <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
@@ -39,8 +40,11 @@ export const HUD = ({ onExit }) => {
   const isMobile = useGalleryStore((s) => s.isMobile);
   const paused = useGalleryStore((s) => s.paused);
   const plActive = useGalleryStore((s) => s.plActive);
+  const simLock = useGalleryStore((s) => s.simLock);
   const seated = useGalleryStore((s) => s.seated);
   const hoveredSofa = useGalleryStore((s) => s.hoveredSofa);
+  const hoveredNpc = useGalleryStore((s) => s.hoveredNpc);
+  const activeNpc = useGalleryStore((s) => s.activeNpc);
   const hoveredId = useGalleryStore((s) => s.hoveredId);
   const activeArtwork = useGalleryStore((s) => s.activeArtwork);
   const favorites = useGalleryStore((s) => s.favorites);
@@ -52,14 +56,24 @@ export const HUD = ({ onExit }) => {
   const toggleFavorite = useGalleryStore((s) => s.toggleFavorite);
 
   const hoveredArt = ARTWORKS.find((a) => a.id === hoveredId);
-  const reticleActive = !!hoveredArt || hoveredSofa;
-  const reticleLabel = hoveredArt ? hoveredArt.title : "Take a Seat";
-  const reticleSub = hoveredArt ? "Click to inspect" : "Click to sit";
+  const hoveredNpcData = NPCS.find((n) => n.id === hoveredNpc);
+  const lockedAny = plActive || simLock;
+  const reticleActive = !!hoveredArt || !!hoveredNpcData || !!hoveredSofa;
+  const reticleLabel = hoveredArt
+    ? hoveredArt.title
+    : hoveredNpcData
+    ? hoveredNpcData.name
+    : "Take a Seat";
+  const reticleSub = hoveredArt
+    ? "Click to inspect"
+    : hoveredNpcData
+    ? "Click to talk"
+    : "Click to sit";
 
   return (
     <>
       {/* Centre reticle */}
-      {!paused && !activeArtwork && (
+      {!paused && !activeArtwork && !activeNpc && (
         <Reticle active={reticleActive} label={reticleLabel} sublabel={reticleSub} />
       )}
 
@@ -74,7 +88,7 @@ export const HUD = ({ onExit }) => {
           </span>
         </div>
         <div className="pointer-events-auto flex items-center gap-3">
-          {!isMobile && !plActive && (
+          {!isMobile && !lockedAny && (
             <button
               data-testid="lock-cursor-btn"
               onClick={() => controls && controls.lock()}
@@ -104,12 +118,12 @@ export const HUD = ({ onExit }) => {
       </div>
 
       {/* Bottom-left hint bar (subtle, never blocks the view) */}
-      {!paused && !activeArtwork && !isMobile && (
+      {!paused && !activeArtwork && !activeNpc && !isMobile && (
         <div className="pointer-events-none absolute bottom-6 left-6 z-30 border border-white/10 bg-black/35 px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-white/55 backdrop-blur-sm">
           {seated ? (
             <p>Seated — Look Around 360° · WASD — Stand Up</p>
-          ) : plActive ? (
-            <p>WASD — Move · Mouse — Look · Shift — Run · ESC — Pause</p>
+          ) : lockedAny ? (
+            <p>WASD — Move · Mouse — Look · Shift — Run · L / ESC — Unlock</p>
           ) : (
             <p>WASD — Move · Drag — Look · Click — Lock Cursor · P — Pause</p>
           )}
