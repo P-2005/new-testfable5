@@ -1,0 +1,86 @@
+{
+  "theme": "Luxury Contemporary Gallery (Archetype 5: Luxury, Custom Light/Dark Contrast)",
+  "color_palette": {
+    "landing_background": "#1a1a1a",
+    "landing_text": "#ffffff",
+    "gallery_background": "#F8F9FA",
+    "gallery_walls": "#ffffff",
+    "gallery_floor": "#eeeeee",
+    "gold_accent_primary": "#d4af37",
+    "gold_accent_secondary": "#AA8B2C",
+    "text_dark": "#1a1a1a",
+    "text_muted": "#666666"
+  },
+  "typography": {
+    "primary_heading": "Cormorant Garamond, serif",
+    "body_text": "Outfit, sans-serif",
+    "notes": "Use tracking-tight for large headings. For UI elements (placards, analytics, buttons), use Outfit. For immersive gallery titles, use Cormorant Garamond."
+  },
+  "layout_and_spacing": {
+    "landing": "100vh absolute positioning layout. Staggered text in the center. Minimalist HUD.",
+    "gallery_canvas": "100vw, 100vh canvas. Overlay UI (HUD) must use z-50 and pointer-events-none where appropriate.",
+    "ui_overlay": "Absolute positioned elements around the edges of the screen (Top Right: Favorites, Bottom Left: WASD Controls guide, Center: Reticle).",
+    "padding": "Use generous padding for overlays (p-8 to p-12)."
+  },
+  "animations_and_interactions": {
+    "landing_particles": "Subtle, floating particles in the deep charcoal background to create depth.",
+    "custom_cursor": "Framer-motion div that follows mouse position, leaving a subtle particle trail or trailing delay.",
+    "breathing_cta": "Scale animation on 'ENTER THE GALLERY' button using Framer Motion (scale: [1, 1.05, 1], transition: repeat: Infinity).",
+    "curtain_wipe": "Framer Motion full-screen div that slides up (y: '100%' to 0) or expands from center, wiping the screen to transition from Landing to Gallery Phase 2.",
+    "staggered_entrance": "Text reveal for Parv Malav's title using Framer Motion staggerChildren."
+  },
+  "three_js_gallery_spec": {
+    "environment": "Use @react-three/drei <Environment preset='warehouse'> or custom ambient light to set base lighting.",
+    "architecture": "White minimalist walls using BoxGeometry. Floor should use <MeshReflectorMaterial> from drei for a highly polished, reflective white luxury look.",
+    "exhibits": "Group containing: 1) Frame (BoxGeometry with gold texture/color), 2) Artwork (PlaneGeometry with image map), 3) SpotLight (pointing at artwork, casting shadows), 4) Placard (small plane with <Text> from drei detailing Title & Year).",
+    "controls": "Desktop: <PointerLockControls> combined with useFrame to update camera position based on WASD keys. Mobile: Add absolute positioned on-screen joystick/d-pad overlay modifying camera position.",
+    "interaction": "In the center of the screen, place an HTML crosshair. Use useFrame with Raycaster to detect if the crosshair is over an 'Artwork' mesh. If hovering, show 'Press Click to Inspect' hint. On click, open HTML Overlay."
+  },
+  "components": {
+    "LandingPage": "Full screen charcoal view. Parv Malav Portfolio intro. Enter Gallery button.",
+    "GalleryScene": "R3F Canvas component containing lights, walls, floor, and Exhibits.",
+    "PlayerController": "Component handling WASD, velocity, collision clamping, and mouselook/PointerLock.",
+    "Exhibit": "Reusable R3F component taking title, description, image_url, and position.",
+    "HUDOverlay": "React HTML layer over Canvas. Contains reticle, control hints, favorites toggle.",
+    "ArtworkModal": "Framer Motion HTML popup with blurred background (backdrop-blur-md bg-white/70 or bg-black/60). Shows artwork details, 'Add to Favorites' button, and simulated analytics (view count)."
+  },
+  "media_assets": {
+    "textures": {
+      "gold_foil": "https://images.unsplash.com/photo-1545873509-33e944ca7655?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxnb2xkJTIwdGV4dHVyZXxlbnwwfHx8fDE3ODEyODM5NjB8MA&ixlib=rb-4.1.0&q=85"
+    },
+    "placeholders": [
+      {
+        "id": "project-smashclub",
+        "title": "SMASH.CLUB Platform",
+        "type": "Project",
+        "url": "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwxfHxjb250ZW1wb3JhcnklMjBhYnN0cmFjdCUyMGFydHxlbnwwfHx8fDE3ODEyODM5NjB8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Full-stack badminton platform engineering project."
+      },
+      {
+        "id": "skills-cloud",
+        "title": "Cloud Architecture",
+        "type": "Skillset",
+        "url": "https://images.unsplash.com/photo-1618331833071-ce81bd50d300?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwyfHxjb250ZW1wb3JhcnklMjBhYnN0cmFjdCUyMGFydHxlbnwwfHx8fDE3ODEyODM5NjB8MA&ixlib=rb-4.1.0&q=85",
+        "description": "AWS, Docker, Kubernetes, CI/CD pipelines."
+      },
+      {
+        "id": "contact-parv",
+        "title": "Parv Malav",
+        "type": "Contact",
+        "url": "https://images.unsplash.com/photo-1566753323558-f4e0952af115?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTN8MHwxfHNlYXJjaHwxfHxkZXZlbG9wZXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODEyODM5NjB8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Software Developer & Cloud Engineer. Contact: parvmalav666@gmail.com"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "1. Setup dependencies: yarn add @react-three/fiber @react-three/drei three framer-motion lucide-react",
+    "2. Implement Phase 1: Landing page with deep charcoal (#1a1a1a) background, gold (#d4af37) text accents. Use Framer Motion for a custom cursor, staggered text entrance for 'Parv Malav - Software & Cloud Engineer', and a breathing 'ENTER THE GALLERY' CTA button.",
+    "3. Implement the transition: Clicking the CTA triggers a curtain wipe animation that reveals the 3D gallery.",
+    "4. Implement Phase 2: R3F Canvas for the immersive 3D gallery. Build a room with white walls, and a polished reflective floor (<MeshReflectorMaterial>).",
+    "5. Create the Exhibit Component: Map the placeholder images to PlaneGeometries framed by gold-textured boxes. Use <SpotLight> to illuminate them.",
+    "6. Build the Player Controller: Use <PointerLockControls> for desktop mouselook. Add WASD movement logic using the useFrame hook, clamping coordinates to prevent walking through walls. Implement a basic mobile touch fallback for movement.",
+    "7. Build the 2D UI Overlay: A reticle in the center, a controls help box (bottom left), and a Favorites drawer (top right).",
+    "8. Interaction: When looking at an exhibit and clicking, show an HTML overlay giving the artwork's title, description, 'Add to Favorites' button, and simulated analytics (e.g., '142 views').",
+    "9. CRITICAL: Add data-testid attributes to all interactive elements (e.g., data-testid='enter-gallery-cta', data-testid='artwork-inspect-overlay')."
+  ]
+}
