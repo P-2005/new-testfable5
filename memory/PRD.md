@@ -34,6 +34,14 @@ Build an extraordinary, immersive 3D digital art gallery portfolio website — a
 - New entry transition: "Now Entering — The Private Collection" cinematic fade (replaced curtain shutters)
 - Modal close no longer pops any overlay
 
+## Iteration 3 (June 2026)
+- Landing: removed "Admission Free" + "Press Enter to begin" texts
+- Reticle: minimal horror-game circle (removed crosshair ticks); "Lock Cursor" button in top bar (data-testid lock-cursor-btn)
+- Centre sofa (leather + gold legs, faces featured wall): click/reticle-click to sit (camera eases to seat y1.18), 360° free look while seated, WASD/Space stands up (steps off to front), solid collision footprint (±2.05 x, ±1.05 z)
+- Real images: smash-club + education (VIT campus) + about (portrait) use user-uploaded assets (customer-assets URLs in artworks.js); elo=badminton, languages=code, web-cloud=servers, certifications=graduation (Unsplash)
+- Input: continuous per-frame polling via refs (keyboard + mouse fully parallel, no event blocking)
+- NOTE: craco.config.js R3F babel exclusion regex now includes Sofa — any NEW R3F file must be added there
+
 ## Backend API
 - GET /api/ — health
 - POST /api/artworks/{artwork_id}/view → {artwork_id, views}

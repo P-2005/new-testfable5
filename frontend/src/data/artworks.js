@@ -22,7 +22,7 @@ export const ARTWORKS = [
       { label: "GitHub", url: "https://github.com/P-2005" },
     ],
     image:
-      "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+      "https://customer-assets.emergentagent.com/job_gallery-immerse-3/artifacts/n0w8n1sk_image_2026-06-12_233331835.png",
     position: [0, 2.2, -9.8],
     rotationY: 0,
     size: [4.4, 2.6],
@@ -43,7 +43,7 @@ export const ARTWORKS = [
     ],
     links: [],
     image:
-      "https://images.unsplash.com/photo-1541961017774-22349e4a1262?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
     position: [-8.5, 2.2, -9.8],
     rotationY: 0,
     size: [3, 2.1],
@@ -63,7 +63,7 @@ export const ARTWORKS = [
     ],
     links: [],
     image:
-      "https://images.unsplash.com/photo-1550859492-d5da9d8e45f3?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+      "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
     position: [8.5, 2.2, -9.8],
     rotationY: 0,
     size: [3, 2.1],
@@ -84,7 +84,7 @@ export const ARTWORKS = [
     ],
     links: [],
     image:
-      "https://images.unsplash.com/photo-1618331833071-ce81bd50d300?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+      "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
     position: [-13.8, 2.2, -4.5],
     rotationY: Math.PI / 2,
     size: [3, 2.1],
@@ -105,7 +105,7 @@ export const ARTWORKS = [
     ],
     links: [],
     image:
-      "https://images.unsplash.com/photo-1562774053-701939374585?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+      "https://customer-assets.emergentagent.com/job_gallery-immerse-3/artifacts/aqrhee9r_campus-banner.jpg",
     position: [-13.8, 2.2, 3.5],
     rotationY: Math.PI / 2,
     size: [3, 2.1],
@@ -127,7 +127,7 @@ export const ARTWORKS = [
     ],
     links: [],
     image:
-      "https://images.unsplash.com/photo-1589998059171-988d887df646?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+      "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
     position: [13.8, 2.2, -4.5],
     rotationY: -Math.PI / 2,
     size: [3, 2.1],
@@ -151,7 +151,7 @@ export const ARTWORKS = [
       { label: "LinkedIn", url: "https://linkedin.com/in/parv-malav-69927940b" },
     ],
     image:
-      "https://images.unsplash.com/photo-1566753323558-f4e0952af115?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+      "https://customer-assets.emergentagent.com/job_gallery-immerse-3/artifacts/8hc5p7we_1779691160484.jpg",
     position: [13.8, 2.2, 3.5],
     rotationY: -Math.PI / 2,
     size: [2.2, 2.8],

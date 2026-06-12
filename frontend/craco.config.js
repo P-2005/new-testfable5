@@ -90,7 +90,7 @@ if (isDevServer) {
     // React Three Fiber scene files use lowercase JSX elements (mesh, group, ...)
     // that reject the x-* attributes injected by the visual-edits babel plugin.
     // Wrap the plugin so it skips those files entirely.
-    const R3F_FILES = /[\\/]src[\\/]components[\\/]gallery[\\/](Room|Exhibit|Player|GalleryExperience)\.jsx?$/;
+    const R3F_FILES = /[\\/]src[\\/]components[\\/]gallery[\\/](Room|Exhibit|Player|GalleryExperience|Sofa)\.jsx?$/;
     const shouldSkipFile = (state) => {
       const f =
         (state && state.filename) ||

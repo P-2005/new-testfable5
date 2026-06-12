@@ -202,7 +202,11 @@ export const Player = () => {
       const s = useGalleryStore.getState();
       if (s.paused || s.activeArtwork) return;
       if (plActive.current) {
-        // Locked mode: click inspects whatever the crosshair targets
+        // Locked mode: click acts on whatever the centre circle targets
+        if (s.hoveredSofa && !s.seated) {
+          s.setSeated(true);
+          return;
+        }
         if (s.hoveredId) {
           const art = ARTWORKS.find((a) => a.id === s.hoveredId);
           if (art) s.openArtwork(art);
@@ -221,7 +225,12 @@ export const Player = () => {
       raycaster.current.setFromCamera(ndc, camera);
       const hits = raycaster.current.intersectObjects(scene.children, true);
       const first = hits.find((h) => h.object.isMesh && h.object.visible);
-      if (first && first.object.userData?.artworkId && first.distance < 9) return;
+      if (
+        first &&
+        first.distance < 9 &&
+        (first.object.userData?.artworkId || first.object.userData?.sofa)
+      )
+        return;
       tryLock();
     };
 
@@ -304,6 +313,26 @@ export const Player = () => {
       }
     }
 
+    // Seated: 360° free look, walking disabled; any movement input stands up
+    let seatedActive = s.seated;
+    if (seatedActive) {
+      const wantsMove =
+        Math.abs(f) > 0.05 || Math.abs(r) > 0.05 || keys.current.Space;
+      if (wantsMove) {
+        s.setSeated(false);
+        seatedActive = false;
+        camera.position.set(0, EYE, -1.6);
+        vel.current.set(0, 0, 0);
+      } else {
+        const sitEase = 1 - Math.exp(-8 * delta);
+        camera.position.x += (0 - camera.position.x) * sitEase;
+        camera.position.y += (1.18 - camera.position.y) * sitEase;
+        camera.position.z += (0.12 - camera.position.z) * sitEase;
+        vel.current.set(0, 0, 0);
+      }
+    }
+
+    if (!seatedActive) {
     const running = keys.current.ShiftLeft || keys.current.ShiftRight;
     const speed = running ? RUN : WALK;
 
@@ -359,6 +388,19 @@ export const Player = () => {
     const bobOff = moving && grounded.current ? Math.sin(bob.current) * 0.032 : 0;
     camera.position.y = EYE + jumpH.current + bobOff;
 
+    // Solid sofa: push the player out of its footprint while walking
+    const SOFA_X = 2.05;
+    const SOFA_Z = 1.05;
+    const px = camera.position.x;
+    const pz = camera.position.z;
+    if (Math.abs(px) < SOFA_X && Math.abs(pz) < SOFA_Z) {
+      const depthX = SOFA_X - Math.abs(px);
+      const depthZ = SOFA_Z - Math.abs(pz);
+      if (depthX < depthZ) camera.position.x = Math.sign(px || 1) * SOFA_X;
+      else camera.position.z = Math.sign(pz || 1) * SOFA_Z;
+    }
+    }
+
     if (typeof window !== "undefined") {
       window.__galleryDebug = {
         pos: [camera.position.x, camera.position.y, camera.position.z],
@@ -379,7 +421,10 @@ export const Player = () => {
         first && first.object.userData?.artworkId && first.distance < 8
           ? first.object.userData.artworkId
           : null;
+      const sofaHover =
+        !s.seated && !!(first && first.object.userData?.sofa && first.distance < 5);
       if (id !== s.hoveredId) s.setHovered(id);
+      if (sofaHover !== s.hoveredSofa) s.setHoveredSofa(sofaHover);
     }
   });
 

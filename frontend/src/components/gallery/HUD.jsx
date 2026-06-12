@@ -1,39 +1,20 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, X, DoorOpen, Eye, Pause, Play } from "lucide-react";
+import { Heart, X, DoorOpen, Eye, Pause, Play, Lock } from "lucide-react";
 import { useGalleryStore } from "../../store/galleryStore";
 import { ARTWORKS } from "../../data/artworks";
 
-const Reticle = ({ active, label }) => (
+const Reticle = ({ active, label, sublabel }) => (
   <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
     <div className="flex flex-col items-center">
-      {/* Crosshair */}
-      <div className="relative flex h-8 w-8 items-center justify-center">
-        <div
-          data-testid="gallery-reticle"
-          className={`absolute rounded-full transition-all duration-200 ${
-            active
-              ? "h-2 w-2 bg-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.9)]"
-              : "h-1.5 w-1.5 bg-white/90"
-          }`}
-        />
-        <div
-          className={`absolute rounded-full border transition-all duration-200 ${
-            active
-              ? "h-7 w-7 border-[#d4af37]/80"
-              : "h-5 w-5 border-white/35"
-          }`}
-        />
-        {/* crosshair ticks */}
-        {[0, 90, 180, 270].map((deg) => (
-          <div
-            key={deg}
-            className={`absolute h-[7px] w-px transition-colors duration-200 ${
-              active ? "bg-[#d4af37]/90" : "bg-white/55"
-            }`}
-            style={{ transform: `rotate(${deg}deg) translateY(-13px)` }}
-          />
-        ))}
-      </div>
+      {/* Minimal centre circle (horror-game style) */}
+      <div
+        data-testid="gallery-reticle"
+        className={`rounded-full border transition-all duration-200 ${
+          active
+            ? "h-6 w-6 border-[#d4af37] shadow-[0_0_16px_rgba(212,175,55,0.65)]"
+            : "h-3.5 w-3.5 border-white/60"
+        }`}
+      />
       <AnimatePresence>
         {active && (
           <motion.div
@@ -45,7 +26,7 @@ const Reticle = ({ active, label }) => (
           >
             <p className="font-display text-lg italic text-white drop-shadow-lg">{label}</p>
             <p className="mt-1 text-[10px] uppercase tracking-[0.3em] text-[#d4af37]">
-              Click to inspect
+              {sublabel}
             </p>
           </motion.div>
         )}
@@ -58,22 +39,28 @@ export const HUD = ({ onExit }) => {
   const isMobile = useGalleryStore((s) => s.isMobile);
   const paused = useGalleryStore((s) => s.paused);
   const plActive = useGalleryStore((s) => s.plActive);
+  const seated = useGalleryStore((s) => s.seated);
+  const hoveredSofa = useGalleryStore((s) => s.hoveredSofa);
   const hoveredId = useGalleryStore((s) => s.hoveredId);
   const activeArtwork = useGalleryStore((s) => s.activeArtwork);
   const favorites = useGalleryStore((s) => s.favorites);
   const favOpen = useGalleryStore((s) => s.favOpen);
+  const controls = useGalleryStore((s) => s.controls);
   const setFavOpen = useGalleryStore((s) => s.setFavOpen);
   const setPaused = useGalleryStore((s) => s.setPaused);
   const openArtwork = useGalleryStore((s) => s.openArtwork);
   const toggleFavorite = useGalleryStore((s) => s.toggleFavorite);
 
   const hoveredArt = ARTWORKS.find((a) => a.id === hoveredId);
+  const reticleActive = !!hoveredArt || hoveredSofa;
+  const reticleLabel = hoveredArt ? hoveredArt.title : "Take a Seat";
+  const reticleSub = hoveredArt ? "Click to inspect" : "Click to sit";
 
   return (
     <>
-      {/* Crosshair reticle */}
+      {/* Centre reticle */}
       {!paused && !activeArtwork && (
-        <Reticle active={!!hoveredArt} label={hoveredArt?.title} />
+        <Reticle active={reticleActive} label={reticleLabel} sublabel={reticleSub} />
       )}
 
       {/* Top bar */}
@@ -87,6 +74,16 @@ export const HUD = ({ onExit }) => {
           </span>
         </div>
         <div className="pointer-events-auto flex items-center gap-3">
+          {!isMobile && !plActive && (
+            <button
+              data-testid="lock-cursor-btn"
+              onClick={() => controls && controls.lock()}
+              className="flex h-10 items-center gap-2 border border-white/25 bg-black/40 px-4 text-[10px] uppercase tracking-[0.25em] text-white/75 backdrop-blur-sm transition-colors hover:border-[#d4af37]/60 hover:text-[#d4af37]"
+            >
+              <Lock className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Lock Cursor</span>
+            </button>
+          )}
           <button
             data-testid="favorites-toggle-btn"
             onClick={() => setFavOpen(!favOpen)}
@@ -109,10 +106,12 @@ export const HUD = ({ onExit }) => {
       {/* Bottom-left hint bar (subtle, never blocks the view) */}
       {!paused && !activeArtwork && !isMobile && (
         <div className="pointer-events-none absolute bottom-6 left-6 z-30 border border-white/10 bg-black/35 px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-white/55 backdrop-blur-sm">
-          {plActive ? (
+          {seated ? (
+            <p>Seated — Look Around 360° · WASD — Stand Up</p>
+          ) : plActive ? (
             <p>WASD — Move · Mouse — Look · Shift — Run · ESC — Pause</p>
           ) : (
-            <p>WASD — Move · Drag — Look · Click — Mouselook · P — Pause</p>
+            <p>WASD — Move · Drag — Look · Click — Lock Cursor · P — Pause</p>
           )}
         </div>
       )}

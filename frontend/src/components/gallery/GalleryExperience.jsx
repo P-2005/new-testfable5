@@ -2,6 +2,7 @@ import { Suspense, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Room } from "./Room";
 import { Exhibit } from "./Exhibit";
+import { Sofa } from "./Sofa";
 import { Player } from "./Player";
 import { HUD } from "./HUD";
 import { ArtworkModal } from "./ArtworkModal";
@@ -32,6 +33,7 @@ export default function GalleryExperience({ onExit }) {
         <hemisphereLight args={["#fffaf0", "#b8b2a4", 0.55]} />
         <Suspense fallback={null}>
           <Room />
+          <Sofa />
           {ARTWORKS.map((a) => (
             <Exhibit key={a.id} artwork={a} />
           ))}

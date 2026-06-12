@@ -19,6 +19,8 @@ export const useGalleryStore = create((set, get) => ({
   isMobile: typeof window !== "undefined" && "ontouchstart" in window,
   paused: false,
   plActive: false, // native pointer lock engaged
+  seated: false,
+  hoveredSofa: false,
   hoveredId: null,
   activeArtwork: null,
   viewCount: null,
@@ -31,9 +33,18 @@ export const useGalleryStore = create((set, get) => ({
   setPlActive: (plActive) => set({ plActive }),
   setHovered: (hoveredId) => set({ hoveredId }),
   setFavOpen: (favOpen) => set({ favOpen }),
+  setSeated: (seated) => set({ seated, hoveredSofa: false }),
+  setHoveredSofa: (hoveredSofa) => set({ hoveredSofa }),
 
   resetSession: () =>
-    set({ paused: false, activeArtwork: null, hoveredId: null, favOpen: false }),
+    set({
+      paused: false,
+      activeArtwork: null,
+      hoveredId: null,
+      favOpen: false,
+      seated: false,
+      hoveredSofa: false,
+    }),
 
   openArtwork: async (artwork) => {
     // Set state BEFORE unlocking so the pointerlockchange handler

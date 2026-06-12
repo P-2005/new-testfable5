@@ -115,7 +115,6 @@ export default function LandingPage({ onEnter }) {
         className="absolute top-10 right-8 z-10 hidden text-right text-[10px] uppercase tracking-[0.3em] text-white/40 sm:block sm:right-12"
       >
         <p>Open 24 Hours</p>
-        <p className="mt-1 text-[#d4af37]/70">Admission Free</p>
       </motion.div>
 
       {/* Center content */}
@@ -204,15 +203,6 @@ export default function LandingPage({ onEnter }) {
           Enter the Gallery
           <MoveRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
         </motion.button>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.6, 0.3, 0.6] }}
-          transition={{ delay: 4, duration: 4, repeat: Infinity }}
-          className="mt-8 text-[10px] uppercase tracking-[0.3em] text-white/30"
-        >
-          Press Enter ↵ to begin
-        </motion.p>
       </div>
 
       {/* Footer links */}
