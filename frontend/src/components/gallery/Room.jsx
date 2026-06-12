@@ -22,13 +22,15 @@ const Baseboard = ({ position, size }) => (
 
 const CeilingPanel = ({ position }) => (
   <group position={position}>
-    <mesh>
-      <boxGeometry args={[5, 0.08, 2.4]} />
-      <meshStandardMaterial color="#ffffff" emissive="#fff6e2" emissiveIntensity={1.6} />
-    </mesh>
-    <mesh position={[0, -0.01, 0]}>
-      <boxGeometry args={[5.3, 0.06, 2.7]} />
+    {/* Gold trim frame, flush with ceiling */}
+    <mesh position={[0, 0.03, 0]}>
+      <boxGeometry args={[5.4, 0.06, 2.8]} />
       <meshStandardMaterial color={GOLD} metalness={0.85} roughness={0.35} />
+    </mesh>
+    {/* Recessed light panel, clearly separated below the trim (no z-fighting) */}
+    <mesh position={[0, -0.07, 0]}>
+      <boxGeometry args={[4.9, 0.04, 2.3]} />
+      <meshStandardMaterial color="#ffffff" emissive="#fff6e2" emissiveIntensity={1.4} />
     </mesh>
   </group>
 );
@@ -40,17 +42,17 @@ export const Room = () => {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[W, D]} />
         <MeshReflectorMaterial
-          blur={[280, 80]}
-          resolution={1024}
-          mixBlur={1}
-          mixStrength={3.2}
-          roughness={0.65}
+          blur={[220, 60]}
+          resolution={768}
+          mixBlur={0.9}
+          mixStrength={1.1}
+          roughness={0.85}
           depthScale={1.1}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.25}
-          color="#cfcabe"
-          metalness={0.4}
-          mirror={0.45}
+          color="#d8d4c9"
+          metalness={0.08}
+          mirror={0.15}
         />
       </mesh>
 

@@ -14,10 +14,13 @@ const DRAG_SENS = 0.0032;
 const clamp = THREE.MathUtils.clamp;
 
 /**
- * First-person controller with two look modes:
- * 1. Native pointer lock (full browser tabs / deployed site)
- * 2. Drag-to-look fallback (sandboxed iframes where pointer lock is blocked)
- * Look and movement are exponentially smoothed for a fluid walking-sim feel.
+ * Game-style first-person controller.
+ * - Exploration starts immediately (WASD + drag-look always work).
+ * - Clicking empty space engages native pointer lock (cursor disappears,
+ *   raw mouselook). In sandboxed iframes where lock is blocked, drag-look
+ *   remains the seamless fallback.
+ * - L toggles pointer lock. P / ESC opens the pause menu.
+ * - Look + movement are exponentially smoothed for fluidity.
  */
 export const Player = () => {
   const { camera, scene, gl } = useThree();
@@ -44,33 +47,38 @@ export const Player = () => {
 
   // Pointer-lock state
   const plActive = useRef(false);
+  const suppressPause = useRef(false);
   const dragging = useRef(false);
   const dragDist = useRef(0);
   const lastPos = useRef({ x: 0, y: 0 });
 
+  const tryLock = () => {
+    const el = gl.domElement;
+    try {
+      const p = el.requestPointerLock();
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {
+          /* sandboxed iframe — drag-look fallback stays active */
+        });
+      }
+    } catch (_e) {
+      /* SecurityError in sandboxed iframe — fallback mode */
+    }
+  };
+
+  const releaseLock = () => {
+    if (document.pointerLockElement) {
+      suppressPause.current = true;
+      document.exitPointerLock();
+    }
+  };
+
   // Register lock/unlock controls in the store
   useEffect(() => {
-    const el = gl.domElement;
-    const controls = {
-      lock: () => {
-        useGalleryStore.getState().setLocked(true);
-        try {
-          const p = el.requestPointerLock();
-          if (p && typeof p.catch === "function") {
-            p.catch(() => {
-              /* sandboxed iframe — drag-look fallback stays active */
-            });
-          }
-        } catch (_e) {
-          /* SecurityError in sandboxed iframe — fallback mode */
-        }
-      },
-      unlock: () => {
-        useGalleryStore.getState().setLocked(false);
-        if (document.pointerLockElement) document.exitPointerLock();
-      },
-    };
-    useGalleryStore.getState().setControls(controls);
+    useGalleryStore.getState().setControls({
+      lock: tryLock,
+      unlock: releaseLock,
+    });
     // Dev/test helper: teleport + face a direction
     window.__gallerySetView = (x, z, yawVal) => {
       camera.position.x = x;
@@ -78,6 +86,7 @@ export const Player = () => {
       targetYaw.current = yawVal;
       yaw.current = yawVal;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gl, camera]);
 
   // Pointer lock change / error tracking
@@ -86,13 +95,21 @@ export const Player = () => {
       const active = document.pointerLockElement === gl.domElement;
       const wasActive = plActive.current;
       plActive.current = active;
-      // Browser-initiated exit (ESC) while exploring → show menu overlay
-      if (!active && wasActive && useGalleryStore.getState().locked) {
-        useGalleryStore.getState().setLocked(false);
+      useGalleryStore.getState().setPlActive(active);
+      // Browser-initiated exit (native ESC) → open pause menu,
+      // unless the exit was caused by a modal or an intentional toggle.
+      if (!active && wasActive) {
+        if (suppressPause.current) {
+          suppressPause.current = false;
+          return;
+        }
+        const s = useGalleryStore.getState();
+        if (!s.activeArtwork && !s.paused) s.setPaused(true);
       }
     };
     const onError = () => {
       plActive.current = false;
+      useGalleryStore.getState().setPlActive(false);
     };
     document.addEventListener("pointerlockchange", onChange);
     document.addEventListener("pointerlockerror", onError);
@@ -104,13 +121,25 @@ export const Player = () => {
 
   // Keyboard
   useEffect(() => {
+    const togglePause = () => {
+      const s = useGalleryStore.getState();
+      if (s.activeArtwork) return;
+      if (!s.paused && plActive.current) releaseLock();
+      s.setPaused(!s.paused);
+    };
     const down = (e) => {
       keys.current[e.code] = true;
       if (e.code === "Space") e.preventDefault();
-      // ESC exits fallback exploring mode (pointer lock handles its own ESC)
-      if (e.code === "Escape" && !plActive.current) {
+      if (e.code === "KeyP") togglePause();
+      // Native ESC already exits pointer lock (handled by pointerlockchange);
+      // this covers ESC while in drag-look mode.
+      if (e.code === "Escape" && !plActive.current) togglePause();
+      // L toggles pointer lock (game-style mouselook)
+      if (e.code === "KeyL") {
         const s = useGalleryStore.getState();
-        if (s.locked && !s.activeArtwork) s.setLocked(false);
+        if (s.paused || s.activeArtwork) return;
+        if (plActive.current) releaseLock();
+        else tryLock();
       }
     };
     const up = (e) => {
@@ -122,16 +151,17 @@ export const Player = () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Mouse look: pointer-lock movement + drag fallback + click-to-inspect
+  // Mouse look: pointer-lock movement + drag fallback + click handling
   useEffect(() => {
     if (isMobile) return;
     const el = gl.domElement;
 
     const onMouseMove = (e) => {
       const s = useGalleryStore.getState();
-      if (!s.locked || s.activeArtwork) return;
+      if (s.paused || s.activeArtwork) return;
       if (plActive.current) {
         // Chromium can fire a huge movement spike right after lock engages — ignore it
         if (Math.abs(e.movementX) > 200 || Math.abs(e.movementY) > 200) return;
@@ -157,21 +187,32 @@ export const Player = () => {
 
     const onMouseDown = (e) => {
       const s = useGalleryStore.getState();
-      if (!s.locked || s.activeArtwork || plActive.current) return;
+      if (s.paused || s.activeArtwork || plActive.current) return;
       if (e.target !== el) return;
       dragging.current = true;
       dragDist.current = 0;
       lastPos.current = { x: e.clientX, y: e.clientY };
     };
 
-    const onMouseUp = (e) => {
-      const s = useGalleryStore.getState();
-      const wasDragging = dragging.current;
+    const onMouseUp = () => {
       dragging.current = false;
-      if (!s.locked || s.activeArtwork || plActive.current) return;
-      if (!wasDragging || dragDist.current > 8) return;
+    };
+
+    const onClick = (e) => {
+      const s = useGalleryStore.getState();
+      if (s.paused || s.activeArtwork) return;
+      if (plActive.current) {
+        // Locked mode: click inspects whatever the crosshair targets
+        if (s.hoveredId) {
+          const art = ARTWORKS.find((a) => a.id === s.hoveredId);
+          if (art) s.openArtwork(art);
+        }
+        return;
+      }
+      // Unlocked mode: a clean click (not a drag) on empty space engages mouselook.
+      // Clicks on artworks are handled by the Exhibit's own onClick.
+      if (dragDist.current > 8) return;
       if (e.target !== el) return;
-      // Treat as a click: raycast from actual cursor position
       const rect = el.getBoundingClientRect();
       const ndc = new THREE.Vector2(
         ((e.clientX - rect.left) / rect.width) * 2 - 1,
@@ -180,19 +221,8 @@ export const Player = () => {
       raycaster.current.setFromCamera(ndc, camera);
       const hits = raycaster.current.intersectObjects(scene.children, true);
       const first = hits.find((h) => h.object.isMesh && h.object.visible);
-      if (first && first.object.userData?.artworkId && first.distance < 9) {
-        const art = ARTWORKS.find((a) => a.id === first.object.userData.artworkId);
-        if (art) s.openArtwork(art);
-      }
-    };
-
-    // Pointer-lock mode: click inspects whatever the center reticle targets
-    const onClick = () => {
-      const s = useGalleryStore.getState();
-      if (plActive.current && s.locked && s.hoveredId && !s.activeArtwork) {
-        const art = ARTWORKS.find((a) => a.id === s.hoveredId);
-        if (art) s.openArtwork(art);
-      }
+      if (first && first.object.userData?.artworkId && first.distance < 9) return;
+      tryLock();
     };
 
     document.addEventListener("mousemove", onMouseMove);
@@ -205,6 +235,7 @@ export const Player = () => {
       document.removeEventListener("mouseup", onMouseUp);
       document.removeEventListener("click", onClick);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile, gl, camera, scene]);
 
   // Mobile look — drag on canvas
@@ -238,7 +269,7 @@ export const Player = () => {
   useFrame((_, dt) => {
     const s = useGalleryStore.getState();
     const delta = Math.min(dt, 0.05);
-    const exploring = !s.activeArtwork && (s.locked || isMobile);
+    const exploring = !s.paused && !s.activeArtwork;
 
     // Mobile look feeds the same smoothed yaw/pitch system
     if (isMobile && exploring) {
@@ -327,10 +358,11 @@ export const Player = () => {
 
     const bobOff = moving && grounded.current ? Math.sin(bob.current) * 0.032 : 0;
     camera.position.y = EYE + jumpH.current + bobOff;
+
     if (typeof window !== "undefined") {
       window.__galleryDebug = {
         pos: [camera.position.x, camera.position.y, camera.position.z],
-        locked: s.locked,
+        paused: s.paused,
         plActive: plActive.current,
         hovered: s.hoveredId,
       };

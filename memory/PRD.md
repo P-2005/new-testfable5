@@ -27,6 +27,13 @@ Build an extraordinary, immersive 3D digital art gallery portfolio website — a
 - Mobile: touch joystick (bottom-left) + drag-look on canvas, tap-to-inspect via R3F onClick
 - Debug helpers (dev): window.__galleryDebug, window.__gallerySetView(x, z, yaw)
 
+## Iteration 2 (June 2026)
+- Fixed ceiling light z-fighting (white striped patches) — recessed light panel separated from gold trim
+- Reduced floor reflections (mirror 0.45→0.15) so floor reads clearly
+- Game-style controls: gallery starts instantly explorable (no popup); click empty space = pointer lock (cursor hides), L = toggle mouselock, P/ESC = pause menu (Resume / controls guide / Leave Gallery), crosshair reticle with ticks
+- New entry transition: "Now Entering — The Private Collection" cinematic fade (replaced curtain shutters)
+- Modal close no longer pops any overlay
+
 ## Backend API
 - GET /api/ — health
 - POST /api/artworks/{artwork_id}/view → {artwork_id, views}

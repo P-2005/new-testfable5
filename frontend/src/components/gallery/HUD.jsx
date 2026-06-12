@@ -1,26 +1,46 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, X, DoorOpen, Eye } from "lucide-react";
+import { Heart, X, DoorOpen, Eye, Pause, Play } from "lucide-react";
 import { useGalleryStore } from "../../store/galleryStore";
 import { ARTWORKS } from "../../data/artworks";
 
 const Reticle = ({ active, label }) => (
   <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
     <div className="flex flex-col items-center">
-      <div
-        data-testid="gallery-reticle"
-        className={`rounded-full border transition-all duration-200 ${
-          active
-            ? "h-5 w-5 border-[#d4af37] shadow-[0_0_14px_rgba(212,175,55,0.7)]"
-            : "h-2.5 w-2.5 border-white/70"
-        }`}
-      />
+      {/* Crosshair */}
+      <div className="relative flex h-8 w-8 items-center justify-center">
+        <div
+          data-testid="gallery-reticle"
+          className={`absolute rounded-full transition-all duration-200 ${
+            active
+              ? "h-2 w-2 bg-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.9)]"
+              : "h-1.5 w-1.5 bg-white/90"
+          }`}
+        />
+        <div
+          className={`absolute rounded-full border transition-all duration-200 ${
+            active
+              ? "h-7 w-7 border-[#d4af37]/80"
+              : "h-5 w-5 border-white/35"
+          }`}
+        />
+        {/* crosshair ticks */}
+        {[0, 90, 180, 270].map((deg) => (
+          <div
+            key={deg}
+            className={`absolute h-[7px] w-px transition-colors duration-200 ${
+              active ? "bg-[#d4af37]/90" : "bg-white/55"
+            }`}
+            style={{ transform: `rotate(${deg}deg) translateY(-13px)` }}
+          />
+        ))}
+      </div>
       <AnimatePresence>
         {active && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mt-4 text-center"
+            className="mt-5 text-center"
             data-testid="inspect-prompt"
           >
             <p className="font-display text-lg italic text-white drop-shadow-lg">{label}</p>
@@ -35,77 +55,26 @@ const Reticle = ({ active, label }) => (
 );
 
 export const HUD = ({ onExit }) => {
-  const locked = useGalleryStore((s) => s.locked);
   const isMobile = useGalleryStore((s) => s.isMobile);
+  const paused = useGalleryStore((s) => s.paused);
+  const plActive = useGalleryStore((s) => s.plActive);
   const hoveredId = useGalleryStore((s) => s.hoveredId);
   const activeArtwork = useGalleryStore((s) => s.activeArtwork);
   const favorites = useGalleryStore((s) => s.favorites);
   const favOpen = useGalleryStore((s) => s.favOpen);
   const setFavOpen = useGalleryStore((s) => s.setFavOpen);
-  const controls = useGalleryStore((s) => s.controls);
+  const setPaused = useGalleryStore((s) => s.setPaused);
   const openArtwork = useGalleryStore((s) => s.openArtwork);
   const toggleFavorite = useGalleryStore((s) => s.toggleFavorite);
 
   const hoveredArt = ARTWORKS.find((a) => a.id === hoveredId);
-  const exploring = locked || isMobile;
 
   return (
     <>
-      {/* Reticle */}
-      {exploring && !activeArtwork && (
+      {/* Crosshair reticle */}
+      {!paused && !activeArtwork && (
         <Reticle active={!!hoveredArt} label={hoveredArt?.title} />
       )}
-
-      {/* Start overlay (desktop, pointer not locked) */}
-      <AnimatePresence>
-        {!isMobile && !locked && !activeArtwork && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            data-testid="gallery-start-overlay"
-            onClick={() => controls && controls.lock()}
-            className="absolute inset-0 z-40 flex cursor-pointer flex-col items-center justify-center bg-black/65 backdrop-blur-sm"
-          >
-            <p className="text-[10px] uppercase tracking-[0.5em] text-[#d4af37]">
-              The gallery is open
-            </p>
-            <h2 className="mt-4 font-display text-4xl text-white sm:text-5xl">
-              Click to Explore
-            </h2>
-            <div className="mt-10 grid grid-cols-2 gap-x-12 gap-y-3 text-xs text-white/60 sm:grid-cols-4">
-              <div className="text-center">
-                <p className="mb-1 font-semibold text-white">W A S D</p>
-                <p className="uppercase tracking-widest text-[10px]">Walk</p>
-              </div>
-              <div className="text-center">
-                <p className="mb-1 font-semibold text-white">Mouse / Drag</p>
-                <p className="uppercase tracking-widest text-[10px]">Look</p>
-              </div>
-              <div className="text-center">
-                <p className="mb-1 font-semibold text-white">Shift</p>
-                <p className="uppercase tracking-widest text-[10px]">Run</p>
-              </div>
-              <div className="text-center">
-                <p className="mb-1 font-semibold text-white">Click</p>
-                <p className="uppercase tracking-widest text-[10px]">Inspect Art</p>
-              </div>
-            </div>
-            <button
-              data-testid="exit-gallery-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                onExit();
-              }}
-              className="mt-12 flex items-center gap-2 border border-white/20 px-6 py-2.5 text-[10px] uppercase tracking-[0.3em] text-white/60 transition-colors hover:border-[#d4af37]/60 hover:text-[#d4af37]"
-            >
-              <DoorOpen className="h-3.5 w-3.5" />
-              Leave Gallery
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Top bar */}
       <div className="pointer-events-none absolute top-0 left-0 right-0 z-[45] flex items-start justify-between p-5 sm:p-8">
@@ -118,15 +87,6 @@ export const HUD = ({ onExit }) => {
           </span>
         </div>
         <div className="pointer-events-auto flex items-center gap-3">
-          {isMobile && (
-            <button
-              data-testid="mobile-exit-gallery-btn"
-              onClick={onExit}
-              className="flex h-10 w-10 items-center justify-center border border-white/20 bg-black/40 text-white/70 backdrop-blur-sm"
-            >
-              <DoorOpen className="h-4 w-4" />
-            </button>
-          )}
           <button
             data-testid="favorites-toggle-btn"
             onClick={() => setFavOpen(!favOpen)}
@@ -136,16 +96,91 @@ export const HUD = ({ onExit }) => {
             <span className="hidden sm:inline">Favorites</span>
             <span data-testid="favorites-count">{favorites.length}</span>
           </button>
+          <button
+            data-testid="pause-btn"
+            onClick={() => setPaused(true)}
+            className="flex h-10 w-10 items-center justify-center border border-white/25 bg-black/40 text-white/75 backdrop-blur-sm transition-colors hover:border-[#d4af37]/60 hover:text-[#d4af37]"
+          >
+            <Pause className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
-      {/* Controls hint, bottom left (while exploring on desktop) */}
-      {locked && !isMobile && (
+      {/* Bottom-left hint bar (subtle, never blocks the view) */}
+      {!paused && !activeArtwork && !isMobile && (
         <div className="pointer-events-none absolute bottom-6 left-6 z-30 border border-white/10 bg-black/35 px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-white/55 backdrop-blur-sm">
-          <p>WASD — Move · Mouse/Drag — Look · Shift — Run</p>
-          <p className="mt-1">Space — Jump · ESC — Menu</p>
+          {plActive ? (
+            <p>WASD — Move · Mouse — Look · Shift — Run · ESC — Pause</p>
+          ) : (
+            <p>WASD — Move · Drag — Look · Click — Mouselook · P — Pause</p>
+          )}
         </div>
       )}
+
+      {/* Pause menu */}
+      <AnimatePresence>
+        {paused && !activeArtwork && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            data-testid="pause-menu"
+            className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/70 backdrop-blur-md"
+          >
+            <p className="text-[10px] uppercase tracking-[0.5em] text-[#d4af37]">
+              Gallery
+            </p>
+            <h2 className="mt-3 font-display text-5xl text-white">Paused</h2>
+
+            <div className="mt-10 grid grid-cols-2 gap-x-14 gap-y-4 text-xs text-white/60 sm:grid-cols-3">
+              <div className="text-center">
+                <p className="mb-1 font-semibold text-white">W A S D</p>
+                <p className="text-[10px] uppercase tracking-widest">Walk</p>
+              </div>
+              <div className="text-center">
+                <p className="mb-1 font-semibold text-white">Mouse / Drag</p>
+                <p className="text-[10px] uppercase tracking-widest">Look</p>
+              </div>
+              <div className="text-center">
+                <p className="mb-1 font-semibold text-white">Click</p>
+                <p className="text-[10px] uppercase tracking-widest">Inspect Art</p>
+              </div>
+              <div className="text-center">
+                <p className="mb-1 font-semibold text-white">Shift / Space</p>
+                <p className="text-[10px] uppercase tracking-widest">Run / Jump</p>
+              </div>
+              <div className="text-center">
+                <p className="mb-1 font-semibold text-white">L</p>
+                <p className="text-[10px] uppercase tracking-widest">Toggle Mouselock</p>
+              </div>
+              <div className="text-center">
+                <p className="mb-1 font-semibold text-white">P / ESC</p>
+                <p className="text-[10px] uppercase tracking-widest">Pause</p>
+              </div>
+            </div>
+
+            <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row">
+              <button
+                data-testid="resume-btn"
+                onClick={() => setPaused(false)}
+                className="flex items-center gap-3 border border-[#d4af37]/70 bg-[#d4af37]/15 px-10 py-3.5 text-[11px] uppercase tracking-[0.3em] text-[#e9d289] transition-colors hover:bg-[#d4af37]/30 hover:text-white"
+              >
+                <Play className="h-3.5 w-3.5" />
+                Resume
+              </button>
+              <button
+                data-testid="exit-gallery-btn"
+                onClick={onExit}
+                className="flex items-center gap-2 border border-white/20 px-8 py-3.5 text-[11px] uppercase tracking-[0.3em] text-white/60 transition-colors hover:border-[#d4af37]/60 hover:text-[#d4af37]"
+              >
+                <DoorOpen className="h-3.5 w-3.5" />
+                Leave Gallery
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Favorites drawer */}
       <AnimatePresence>

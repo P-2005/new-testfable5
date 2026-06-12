@@ -17,7 +17,8 @@ export const mobileInput = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 } };
 
 export const useGalleryStore = create((set, get) => ({
   isMobile: typeof window !== "undefined" && "ontouchstart" in window,
-  locked: false,
+  paused: false,
+  plActive: false, // native pointer lock engaged
   hoveredId: null,
   activeArtwork: null,
   viewCount: null,
@@ -26,14 +27,20 @@ export const useGalleryStore = create((set, get) => ({
   controls: null,
 
   setControls: (controls) => set({ controls }),
-  setLocked: (locked) => set({ locked }),
+  setPaused: (paused) => set({ paused }),
+  setPlActive: (plActive) => set({ plActive }),
   setHovered: (hoveredId) => set({ hoveredId }),
   setFavOpen: (favOpen) => set({ favOpen }),
 
+  resetSession: () =>
+    set({ paused: false, activeArtwork: null, hoveredId: null, favOpen: false }),
+
   openArtwork: async (artwork) => {
+    // Set state BEFORE unlocking so the pointerlockchange handler
+    // knows this exit was modal-initiated (no pause menu).
+    set({ activeArtwork: artwork, viewCount: null, hoveredId: null, favOpen: false });
     const { controls, isMobile } = get();
     if (!isMobile && controls) controls.unlock();
-    set({ activeArtwork: artwork, viewCount: null, hoveredId: null, favOpen: false });
     try {
       const res = await axios.post(`${API}/artworks/${artwork.id}/view`);
       if (get().activeArtwork?.id === artwork.id) {

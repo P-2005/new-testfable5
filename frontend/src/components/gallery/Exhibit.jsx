@@ -25,9 +25,12 @@ export const Exhibit = ({ artwork }) => {
   const handleClick = (e) => {
     e.stopPropagation();
     const s = useGalleryStore.getState();
-    // Desktop locked mode is handled by the central raycaster click;
-    // this handles mobile taps and unlocked-cursor clicks.
-    if (s.isMobile || !s.locked) openArtwork(artwork);
+    if (s.paused || s.activeArtwork) return;
+    // Locked mode is handled by the central crosshair click in Player
+    if (!s.isMobile && s.plActive) return;
+    // Ignore drags (R3F provides cumulative pointer movement in e.delta)
+    if (typeof e.delta === "number" && e.delta > 8) return;
+    openArtwork(artwork);
   };
 
   return (

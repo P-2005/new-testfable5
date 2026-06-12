@@ -12,10 +12,12 @@ import { useGalleryStore } from "../../store/galleryStore";
 export default function GalleryExperience({ onExit }) {
   const isMobile = useGalleryStore((s) => s.isMobile);
   const loadFavorites = useGalleryStore((s) => s.loadFavorites);
+  const resetSession = useGalleryStore((s) => s.resetSession);
 
   useEffect(() => {
+    resetSession();
     loadFavorites();
-  }, [loadFavorites]);
+  }, [loadFavorites, resetSession]);
 
   return (
     <div className="fixed inset-0 bg-[#101010]" data-testid="gallery-experience">
