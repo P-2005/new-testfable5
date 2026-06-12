@@ -86,6 +86,54 @@ if (isDevServer) {
   try {
     const { withVisualEdits } = require("@emergentbase/visual-edits/craco");
     webpackConfig = withVisualEdits(webpackConfig);
+
+    // React Three Fiber scene files use lowercase JSX elements (mesh, group, ...)
+    // that reject the x-* attributes injected by the visual-edits babel plugin.
+    // Wrap the plugin so it skips those files entirely.
+    const R3F_FILES = /[\\/]src[\\/]components[\\/]gallery[\\/](Room|Exhibit|Player|GalleryExperience)\.jsx?$/;
+    const shouldSkipFile = (state) => {
+      const f =
+        (state && state.filename) ||
+        (state && state.file && state.file.opts && state.file.opts.filename) ||
+        "";
+      return R3F_FILES.test(f);
+    };
+    const wrapVisitor = (visitor) => {
+      const out = {};
+      for (const [key, val] of Object.entries(visitor || {})) {
+        if (typeof val === "function") {
+          out[key] = function (path, state) {
+            if (shouldSkipFile(state)) return;
+            return val.call(this, path, state);
+          };
+        } else if (val && typeof val === "object") {
+          out[key] = {};
+          for (const [phase, fn] of Object.entries(val)) {
+            out[key][phase] = function (path, state) {
+              if (shouldSkipFile(state)) return;
+              return fn.call(this, path, state);
+            };
+          }
+        } else {
+          out[key] = val;
+        }
+      }
+      return out;
+    };
+    try {
+      const vePlugin = require("@emergentbase/visual-edits/babel-plugin").default;
+      if (webpackConfig.babel && Array.isArray(webpackConfig.babel.plugins)) {
+        webpackConfig.babel.plugins = webpackConfig.babel.plugins.map((p) => {
+          if (p !== vePlugin) return p;
+          return (...args) => {
+            const inst = typeof p === "function" ? p(...args) : p;
+            return { ...inst, visitor: wrapVisitor(inst.visitor) };
+          };
+        });
+      }
+    } catch (_e) {
+      // If the babel plugin can't be resolved, leave config untouched.
+    }
   } catch (err) {
     if (err.code === 'MODULE_NOT_FOUND' && err.message.includes('@emergentbase/visual-edits/craco')) {
       console.warn(

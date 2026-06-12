@@ -1,0 +1,52 @@
+{
+  "summary": "Comprehensive testing of Parv Malav 3D Gallery: backend APIs (9/9 pytest passing — views, analytics, favorites CRUD/idempotency), landing page (title, CTA, social links), enter-gallery curtain transition, gallery start overlay with WASD hints, R3F canvas renders without runtime errors, favorites persistence across reload via visitor_id, and Enter-key entry. Pointer-lock engages in the preview environment. Verified backend POST view increments correctly, idempotent favorites upsert, and persistence after page reload.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "HUD.jsx — top-bar Favorites button",
+        "issue": "The start overlay (z-40) covers the top bar (z-30), so the 'Favorites' button (and mobile-exit-gallery-btn) are NOT clickable while the start overlay is showing. The user must first click the overlay to engage pointer lock (which hides the overlay) before the Favorites button becomes reachable. This may be by design, but the button is visually shown above the overlay's dark backdrop which is misleading. Consider raising the favorites/exit top-bar to z-50 OR hiding it until locked.",
+        "selector": "[data-testid='favorites-toggle-btn']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Gallery start overlay",
+        "issues": ["LEAVE GALLERY button works inside overlay, but the top-right Favorites pill is shown above the dark scrim yet not actually clickable (covered by overlay). UX confusion."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_gallery_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional/Low) Reconsider z-index stacking: favorites-toggle-btn (top-bar z-30) is occluded by gallery-start-overlay (z-40). Either bump top-bar to z-50 or conditionally render favorites button only when locked (matches current exit/wasd hint pattern). The overlay's own 'Leave Gallery' button works correctly.",
+    "Note for future tests: Playwright `page.click(force=True)` on top-bar buttons times out waiting for 'navigations to finish' because R3F's continuous render loop keeps the page from reaching networkidle. The clicks DO register (verified via backend state changes); use `page.dispatch_event` or short timeouts to work around if more UI assertions are needed."
+  ],
+  "critical_code_review_comments": [
+    "server.py: clean, async, uses Pydantic, excludes mongo _id via projection — good.",
+    "galleryStore.js: openArtwork posts view + sets viewCount with stale-check (good).",
+    "HUD.jsx: top-bar z-30 vs start-overlay z-40 stacking creates a small UX issue (see UI bugs).",
+    "CORS_ORIGINS env defaults to '*' which is acceptable for this public portfolio.",
+    "No tests in repo for frontend store logic — acceptable for portfolio scope."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_gallery_api.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "90%"
+  },
+  "test_credentials": "None — app has no auth.",
+  "seed_data_creation": "Created TEST_ prefixed visitor_ids and TEST_art_ artwork ids in MongoDB during tests (artwork_views and favorites collections). These are isolated to TEST_ prefix.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest is at /app/backend/tests/test_gallery_api.py — 9 tests, all pass. To test frontend interactively in this environment: pointer-lock DOES work in the preview browser. Important quirks: (1) R3F continuous render means Playwright's networkidle never settles after entering gallery — use short timeouts/force=True, and verify via backend state instead of waiting for actionability; (2) Start-overlay (z-40) covers top-bar (z-30) — to click the Favorites/Mobile-exit buttons you must first dismiss the overlay (click anywhere on overlay → pointer lock engages → overlay disappears). The overlay's own LEAVE GALLERY button works; (3) Artwork modal UI is hard to open in headless because the canvas raycast click flow requires pointer-lock + correct camera aim — use the favorite-view-{id} button inside the favorites drawer to open a modal deterministically (after dismissing overlay).",
+  "rca of the issue": "N/A — no failing functionality. The only finding is a minor UX z-index choice (overlay above top-bar) that is borderline intentional. Recommended mitigation: raise top-bar buttons to z-50 OR conditionally render them only when `locked || activeArtwork` so they aren't shown over the overlay."
+}

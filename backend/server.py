@@ -2,12 +2,11 @@ from fastapi import FastAPI, APIRouter
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import ReturnDocument
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
+from pydantic import BaseModel
 from datetime import datetime, timezone
 
 
@@ -19,54 +18,70 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
-
-# Create a router with the /api prefix
+app = FastAPI(title="Parv Malav Gallery API")
 api_router = APIRouter(prefix="/api")
 
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+class FavoriteCreate(BaseModel):
+    visitor_id: str
+    artwork_id: str
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
 
-# Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Gallery API is live"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+# ---------- Analytics: artwork views ----------
+@api_router.post("/artworks/{artwork_id}/view")
+async def track_view(artwork_id: str):
+    doc = await db.artwork_views.find_one_and_update(
+        {"artwork_id": artwork_id},
+        {
+            "$inc": {"views": 1},
+            "$set": {"last_viewed": datetime.now(timezone.utc).isoformat()},
+        },
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+    return {"artwork_id": artwork_id, "views": doc["views"]}
 
-# Include the router in the main app
+
+@api_router.get("/analytics/views")
+async def get_view_analytics():
+    docs = await db.artwork_views.find({}, {"_id": 0}).to_list(200)
+    return {"views": docs}
+
+
+# ---------- Favorites ----------
+@api_router.get("/favorites/{visitor_id}")
+async def get_favorites(visitor_id: str):
+    docs = await db.favorites.find({"visitor_id": visitor_id}, {"_id": 0}).to_list(500)
+    return {"artwork_ids": [d["artwork_id"] for d in docs]}
+
+
+@api_router.post("/favorites")
+async def add_favorite(fav: FavoriteCreate):
+    await db.favorites.update_one(
+        {"visitor_id": fav.visitor_id, "artwork_id": fav.artwork_id},
+        {
+            "$set": {
+                "visitor_id": fav.visitor_id,
+                "artwork_id": fav.artwork_id,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        },
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api_router.delete("/favorites/{visitor_id}/{artwork_id}")
+async def remove_favorite(visitor_id: str, artwork_id: str):
+    await db.favorites.delete_one({"visitor_id": visitor_id, "artwork_id": artwork_id})
+    return {"ok": True}
+
+
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,12 +92,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
