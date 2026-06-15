@@ -14,7 +14,7 @@ const AVOID = { x: 3.0, z: 2.6 }; // sofa zone
 const MODEL_CONFIG = {
   f1: { url: "/models/visitor_f1.glb", prefix: "", tintMat: "Wolf3D_Outfit_Top", keepHipsPos: true },
   f2: { url: "/models/visitor_f2.glb", prefix: "", tintMat: "costume", keepHipsPos: true },
-  m1: { url: "/models/visitor_m1.glb", prefix: "mixamorig2:", tintMat: "MAT-Body", keepHipsPos: false },
+  m1: { url: "/models/visitor_m1.glb", prefix: "mixamorig2:", tintMat: "MAT-Body", keepHipsPos: true },
 };
 
 const shortestAngle = (from, to) => {
@@ -40,13 +40,18 @@ const randomPoint = () => {
 const retargetClip = (clip, prefix, keepHipsPos) => {
   const c = clip.clone();
   c.tracks = c.tracks.filter((t) => {
-    if (t.name.endsWith(".quaternion")) return true;
-    if (keepHipsPos && t.name.endsWith(".position") && t.name.startsWith("Hips.")) return true;
+    // Keep rotation tracks
+    if (t.name.endsWith(".quaternion") || t.name.endsWith(".rotation")) return true;
+    // Keep Hips position/translation tracks if requested
+    if (keepHipsPos && (t.name.endsWith(".position") || t.name.endsWith(".translation")) && t.name.includes("Hips")) return true;
     return false;
   });
   if (prefix) {
     c.tracks.forEach((t) => {
-      t.name = prefix + t.name;
+      // Handle tracks that already have a prefix or are just bone names
+      if (!t.name.startsWith(prefix)) {
+        t.name = prefix + t.name;
+      }
     });
   }
   return c;
