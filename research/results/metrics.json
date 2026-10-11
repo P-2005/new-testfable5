@@ -1,0 +1,12 @@
+{
+  "seed": 7,
+  "trials": 35,
+  "baseline_mean_rmse_last10": 0.1835026226324491,
+  "gated_mean_rmse_last10": 0.1836685094465217,
+  "baseline_rmse_after_push": 0.18451803436542735,
+  "gated_rmse_after_push": 0.1893026681865091,
+  "baseline_memory_after_push": 6.15390803974859,
+  "gated_memory_after_push": 2.566880812261759,
+  "gated_mean_weight_push_trial": 0.21192373780891802,
+  "gated_mean_weight_slip_trial": 0.0698050970591022
+}

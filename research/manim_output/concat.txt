@@ -1,0 +1,5 @@
+file 'videos/video/480p15/MemoryLoop.mp4'
+file 'videos/video/480p15/BaselineUpdate.mp4'
+file 'videos/video/480p15/CorruptedTrial.mp4'
+file 'videos/video/480p15/GatedUpdate.mp4'
+file 'videos/video/480p15/Comparison.mp4'
