@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Disturbance-Gated ILC Lab | Quadruped Control</title>
+  <meta name="description" content="A reproducible control-systems study of disturbance-gated torque-memory iterative learning control for quadruped locomotion.">
+  <meta name="keywords" content="iterative learning control, quadruped robotics, torque memory, disturbance rejection, control systems">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Disturbance-Gated ILC Lab">
+  <meta property="og:description" content="A reproducible control-systems study of safer torque-memory updates for repeated quadruped locomotion.">
+  <meta property="og:site_name" content="Disturbance-Gated ILC Lab">
+  <meta name="twitter:card" content="summary">
+  <meta name="theme-color" content="#07131f">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="shell nav-wrap">
+      <a class="brand" href="#top" aria-label="Disturbance-Gated ILC Lab home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span><strong>ILC LAB</strong><small>control memory / quadruped gait</small></span>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+      <nav id="site-nav" class="site-nav" aria-label="Primary navigation">
+        <a href="#gap">Research gap</a><a href="#method">Method</a><a href="#results">Results</a><a href="#reproduce">Reproduce</a>
+        <a class="nav-github" href="https://github.com/P-2005/new-testfable5/tree/main/research" target="_blank" rel="noreferrer">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="top" class="hero shell">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="signal-dot"></span> SIMULATION STUDY / CONTROL SYSTEMS</p>
+        <h1>Don’t let one bad trial rewrite the robot’s memory.</h1>
+        <p class="hero-lede">A reproducible implementation of <em>disturbance-gated torque-memory iterative learning control</em> for repeated quadruped locomotion.</p>
+        <div class="hero-actions"><a class="button button-primary" href="#results">See the evidence <span>↓</span></a><a class="button button-quiet" href="https://github.com/P-2005/new-testfable5/tree/main/research" target="_blank" rel="noreferrer">Open implementation ↗</a></div>
+        <div class="hero-facts"><div><strong>35</strong><span>repeated trials</span></div><div><strong>2</strong><span>disturbance scenarios</span></div><div><strong>0.21</strong><span>gate weight on push</span></div></div>
+      </div>
+      <div class="hero-visual" aria-label="Conceptual illustration of a torque memory profile and confidence gate">
+        <div class="scope-label">PHASE MEMORY / LIVE TRACE</div>
+        <div class="scope-grid"></div>
+        <svg class="scope-wave" viewBox="0 0 560 310" role="img" aria-label="Torque memory waveform with a disturbance pulse being attenuated">
+          <path class="wave-shadow" d="M12 232 C62 188 74 88 120 104 S170 260 225 214 S274 54 320 102 S360 246 414 210 S460 78 548 132"/>
+          <path class="wave-main" d="M12 232 C62 188 74 88 120 104 S170 260 225 214 S274 54 320 102 S360 246 414 210 S460 78 548 132"/>
+          <path class="pulse" d="M278 216 C298 198 306 25 325 44 S347 218 366 204"/>
+          <line x1="325" y1="36" x2="325" y2="278" class="cursor-line"/>
+        </svg>
+        <div class="scope-caption"><span><i class="legend-blue"></i> stored profile</span><span><i class="legend-orange"></i> corrupted update</span><b>q ≈ 0</b></div>
+      </div>
+    </section>
+
+    <section class="ticker" aria-label="Project statement"><div class="ticker-inner"><span>REPETITIVE TASK</span><b>→</b><span>OBSERVE</span><b>→</b><span>GATE</span><b>→</b><span>UPDATE MEMORY</span><b>→</b><span>REPEAT</span></div></section>
+
+    <section id="gap" class="section shell two-col">
+      <div class="section-intro"><p class="eyebrow">01 / THE GAP</p><h2>ILC is good at repetition. The world is not.</h2><p>Iterative learning control improves a repeated task by carrying error information from one execution into the next. That same strength becomes a liability when a trial contains a one-off push, slip, missed contact, or sensor anomaly.</p><p>The question is not whether quadruped ILC exists. It does. The overlooked implementation question is <strong>when to reject a trial before its error becomes persistent feedforward torque.</strong></p></div>
+      <div class="callout-stack"><article class="callout"><span class="callout-index">A</span><div><h3>What conventional ILC assumes</h3><p>Every execution is informative enough to update the phase-indexed memory.</p></div></article><article class="callout accent"><span class="callout-index">B</span><div><h3>What the experiment adds</h3><p>A confidence layer that uses innovation, contact consistency, and saturation to quarantine corrupted samples.</p></div></article><article class="callout"><span class="callout-index">C</span><div><h3>What is deliberately not claimed</h3><p>This is not a new gait generator, RL policy, or proof of hardware readiness. It is a testable memory-hygiene layer.</p></div></article></div>
+    </section>
+
+    <section id="method" class="section section-dark">
+      <div class="shell"><p class="eyebrow">02 / THE METHOD</p><h2>Same plant. Same disturbances. One changed decision.</h2><p class="section-lede">The ablation isolates the research contribution: both controllers use the same phase-indexed trajectory, feedback PD controller, torque limits, noise, and disturbances. Only the memory update is changed.</p>
+        <div class="method-tabs" role="tablist" aria-label="Algorithm comparison"><button class="tab active" role="tab" aria-selected="true" aria-controls="baseline-panel" id="baseline-tab">Baseline PD-ILC</button><button class="tab" role="tab" aria-selected="false" aria-controls="gated-panel" id="gated-tab">Disturbance-gated ILC</button></div>
+        <div id="baseline-panel" class="method-panel active" role="tabpanel" aria-labelledby="baseline-tab"><div class="equation-card"><span class="eq-label">STANDARD UPDATE</span><code>τ[k+1,s] = τ[k,s] + α · (Kp·e[k,s+δ] + Kd·ė[k,s+δ])</code></div><div class="method-grid"><div><h3>How it behaves</h3><p>The error from every trial is phase-shifted by a small look-ahead and written into the feedforward torque profile. This learns quickly when the disturbance repeats.</p></div><div><h3>Failure mode</h3><p>A non-repetitive event can create a large update that survives long after the push or slip has ended.</p></div></div></div>
+        <div id="gated-panel" class="method-panel" role="tabpanel" aria-labelledby="gated-tab" hidden><div class="equation-card equation-green"><span class="eq-label">CONFIDENCE-WEIGHTED UPDATE</span><code>q[k,s] = clip((1 − d[k]) · c[k,s] · (1 − sat[k,s]), 0, 1)</code><code>τ[k+1,s] = τ[k,s] + α · q[k,s] · Δτ[k,s]</code></div><div class="method-grid"><div><h3>Signals available to the controller</h3><p><strong>d[k]</strong> scores innovation residual and actuator saturation. <strong>c[k,s]</strong> checks planned versus observed contact at each phase sample.</p></div><div><h3>Safety behavior</h3><p>When the trial looks corrupted, q approaches zero. The previous memory is retained, while the rejected sample remains available for analysis.</p></div></div></div>
+        <div class="steps"><div><span>01</span><p>Execute feedback plus stored feedforward torque.</p></div><div><span>02</span><p>Log phase, error, contact estimate, innovation, and saturation.</p></div><div><span>03</span><p>Estimate trial quality without hidden external-force ground truth.</p></div><div><span>04</span><p>Update only the accepted phase samples.</p></div></div>
+      </div>
+    </section>
+
+    <section id="results" class="section shell results-section"><div class="section-heading"><div><p class="eyebrow">03 / THE EVIDENCE</p><h2>The gate changes memory more than it changes the plant.</h2></div><p class="heading-note">Default run · seed 7 · 35 trials</p></div>
+      <figure class="plot-card"><img src="/assets/comparison.png" alt="Four-panel plot showing tracking RMSE, stored feedforward torque magnitude, gate weight during corrupted trials, and final phase-indexed memory for baseline and gated ILC."><figcaption>Four-panel comparison from the reproducible Python experiment. Shaded windows mark the one-off push and slip disturbances.</figcaption></figure>
+      <div class="metric-grid"><article class="metric"><span class="metric-label">MEMORY AFTER PUSH</span><strong><span>6.15</span><em>→</em><span class="green">2.57</span></strong><small>baseline RMS torque → gated RMS torque</small></article><article class="metric"><span class="metric-label">FINAL MEMORY RMS</span><strong><span>6.69</span><em>→</em><span class="green">3.62</span></strong><small>persistent profile magnitude after 35 trials</small></article><article class="metric"><span class="metric-label">GATE WEIGHT</span><strong class="green">0.21</strong><small>mean confidence during the push trial</small></article><article class="metric"><span class="metric-label">SLIP RESPONSE</span><strong class="green">0.07</strong><small>mean confidence during the slip trial</small></article></div>
+      <div class="interpretation"><span class="quote-mark">“</span><p>The current toy plant does not justify claiming universal RMSE improvement. It does demonstrate the intended trade-off: less aggressive learning in exchange for substantially less memory contamination.</p></div>
+    </section>
+
+    <section id="video" class="section section-video"><div class="shell video-layout"><div><p class="eyebrow">04 / EXPLAINER</p><h2>See the update decision happen.</h2><p>A five-scene Manim explanation for a classroom presentation: memory loop, baseline update, corrupted trial, confidence gate, and the testable comparison.</p><details class="transcript"><summary>Open transcript</summary><p><strong>Phase-indexed torque memory.</strong> Repeated gait trials share a stored feedforward profile. Baseline ILC adds the tracking error from every trial. A one-off push or slip can therefore contaminate memory. The proposed fix computes a disturbance score and contact consistency, then multiplies the update by a confidence weight. When the trial is corrupted, the weight approaches zero and the previous memory is kept.</p></details></div><div class="video-frame"><video controls preload="metadata" poster="/assets/comparison.png"><source src="/assets/gated_ilc_explanation.mp4" type="video/mp4">Your browser does not support embedded video.</video><span class="video-tag">MANIM / 42.5 SEC</span></div></div></section>
+
+    <section id="reproduce" class="section shell reproduce"><div class="repro-copy"><p class="eyebrow">05 / REPRODUCE</p><h2>One command from question to plot.</h2><p>The implementation is intentionally compact and auditable. Clone the repository, run the experiment, and inspect the plot, metrics JSON, and raw NumPy arrays.</p><a class="button button-primary" href="https://github.com/P-2005/new-testfable5/tree/main/research" target="_blank" rel="noreferrer">View the GitHub implementation ↗</a></div><div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>research / terminal</b></div><pre><code><i>$</i> git clone https://github.com/P-2005/new-testfable5
+<i>$</i> cd new-testfable5/research
+<i>$</i> python3 run_experiment.py --seed 7 --trials 35
+
+<span class="terminal-green">✓ comparison.png written</span>
+<span class="terminal-green">✓ metrics.json written</span>
+<span class="terminal-green">✓ trial_data.npz written</span></code></pre></div></section>
+
+    <section class="section shell limitations"><div><p class="eyebrow">BOUNDARIES</p><h2>What comes next?</h2></div><div class="limitations-copy"><p>The next rigorous step is to port the same update layer to an A1 MuJoCo or Isaac Gym model, replace the toy contact signal with estimated force and base-innovation signals, and sweep disturbance frequency, observation noise, gate threshold, and learning rate.</p><p>For the presentation, the honest contribution is clear: <strong>selective acceptance of trial data into persistent torque memory.</strong></p></div></section>
+  </main>
+  <footer class="site-footer"><div class="shell footer-inner"><div class="brand"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><span><strong>ILC LAB</strong><small>disturbance-gated memory</small></span></div><p>Built for a control-systems research demonstration.</p><a href="https://github.com/P-2005/new-testfable5/tree/main/research" target="_blank" rel="noreferrer">Source on GitHub ↗</a></div></footer>
+  <script src="/app.js" defer></script>
+</body></html>
